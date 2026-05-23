@@ -1,0 +1,80 @@
+chapter 2 responses
+
+1) a, d,
+A, D, G
+
+2) a, b, d
+A, B, D
+
+3) b, d, c, f,
+B, C, D, F
+
+4) b
+B,
+
+5) a, c, d
+A, C
+
+6) f
+F
+
+7) c
+D
+
+8) a
+A
+
+9) d, b, a
+A, D, E
+
+10) g
+G
+
+11) d
+D
+
+12) e
+D
+
+13) f
+F
+boolean sunny = true, raining = false, sunday = true;
+boolean toStore = true
+boolean toZoo = true
+boolean home = false
+
+
+14) d, e, g
+B, E, G
+
+15) d
+D
+
+16) b
+B
+1 line
+
+17) c, f
+C, F
+int taken = 1, sold = 3;
+sold += 1 + taken++;
+5, 2
+sold, taken
+5, 4
+6, 4
+
+18) c
+C
+
+19) f, b
+B, F
+int start = 7, end = 4;
+end += ++start;
+12, 8
+
+20) a,
+A, D, E,
+
+21) f
+E
+
