@@ -1,25 +1,71 @@
 review questions: resp cap 1
 
 1) d, e
+option E is the canonical main methods signature; 
+option D is an alternate form with the redundant final;
+option A is incorrect: main must be public; B and F because main must be void; C main must be static
+
 2) c, d, e,
+The package and import statements are both optional. If both are present, the order must
+
 3) a, e
 4) b, e, g
-5) b, c, f
+
+5) b, c, f 
+A, D, F. Garbage collectionis never guaranteed to run, makin option F correct and option
+E incorrect.
+After line 13, the bear object is no longer accessibel since borwbear is no longe accessibe, which makes option D the final answer.
+
 6) c; water, air, twoHumps, path
+F
+
 7) c, 
-8) b, d, g
+E
+
+8) b, d, g,
+E, H
+
 9) c, e, 
+E
+
 10) a, c, e, f, 
+A, E, F
+
 11) e (4)
+E
+
 12) a, b, d
+A, C, D
+
 13) a, b, 
+A, B, C
+
 14) a, b, d, e,
+A, B, D, E
+
 15) c, e, f,
+C, E, F
+
 16) a, d
+A, D,
+
 17) c, f, g
+D, F, G
+
 18) b, f, d 
+B, C, F
+
 19) a, d, e,
+A, D
+
 20) a, b,
+C
+
 21) c
+D
+
 22) a, c, f, g
+C, F, G
+
 23) a, b, 
+A, D
