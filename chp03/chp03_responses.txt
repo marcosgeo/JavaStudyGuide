@@ -1,0 +1,89 @@
+1) a, b, c, d, e, f,
+
+2) a, or not compile 
+humidity = 0
+too low
+
+3) a, d, f
+
+4) c, 
+type = turtle
+
+5) e
+List<Integer> myFavoriteNumbers = new ArrayList<>();
+myFavoriteNumbers.add(10);
+myFavoriteNumbers.add(14);
+for (var a : myFavoriteNumbers) {
+  System.out.println(a + ", ");
+  break;
+}
+
+for (int b : myFavoriteNumbers) {
+  continue;
+  System.out.print(b + ", ");
+}
+
+for (Object c : myFavoriteNumbers) {  // not compile
+  System.out.println(c + ", ");
+
+6) c, d, e,
+
+7) b, d, e, f(check)
+ 
+8) g,
+
+9) a,
+1, 0, count++
+1, 1, break bunny
+2, 0, break bunny
+2, 1, count++
+2, 2, break bunny
+3, 1, break bunny
+
+10) b
+line 14
+
+11) a
+
+12) c
+sing 8, squawk 2, notes 0
+sing 7, squawk 4, notes 11
+sing 6, squawk 6, notes 23
+
+13) d
+keepGoing true, result 15, meters 10
+meters 9, kg true, result 13
+meters 8, keepGoing false, 11
+
+14) a, b, d, f,
+
+15) f (ver)
+
+16) a, b,
+
+17) e,
+participants 4, animal 2, performers -1
+participants = 5
+participants = 10
+animals 3
+performers 3
+
+18) c, e
+
+19) f
+
+20)
+choose statemens to compile and not produce a infinite loop
+4: int height = 1;
+5: L1: while (height++ < 10) {
+6:   long humidity = 12;
+7:   L2: do {
+8:     if (humidity-- % 12 == 0) ______;
+9:     int temperature = 30;
+10:    L3: for (;;) {
+11:      temperature++;
+12:      if (temperature > 50) ________;
+13:    }
+14:  } while (humidity > 4);
+15:}
+
