@@ -252,10 +252,10 @@ That's, the words *day* and *date* are often used as synonyms. Be alert on the e
 When working with dates and times, the first thing to do is to decide how much 
 information we need. Java gives us four choices:
 
-- **LocalDate** contains just a date -- no time and time zone
-- **LocalTime** contains just a time -- no date and time zone
-- **LocalDateTime** contains both date and time but no time zone
-- **ZonedDateTime** contains a date, time and time zone.
+- `LocalDate` contains just a date -- no time and time zone
+- `LocalTime` contains just a time -- no date and time zone
+- `LocalDateTime` contains both date and time but no time zone
+- `ZonedDateTime` contains a date, time and time zone.
 
 We obtain data and time instances using static methods:
 ```
@@ -324,6 +324,259 @@ System.out.println(date);    // 2026-02-06
 
 date = date.minusMonths(10);  // 2025-04-06
 date = date.minusYears(20);  // 2005-04-06
+
+var time = LocalTime.of(13, 28);
+System.out.println(time);   // 13:28
+time = time.plusSeconds(15);
+System.out.println(time);   // 13:28:15
 ```
+
+Methods if `LocalDate`, `LocalTime`, `LocalDateTime`, and `ZonedDateTime`
+
+|                | LocalDate? | LocalTime? | LocalDateTime? | ZonedDateTime? |
+|:---------------|------------|------------|----------------|----------------|
+| plusYear()     |
+| minusYear()    |
+|----------------|
+| plusMonth()    |
+| minusMonth()   |
+|----------------|
+| plusWeeks()    |
+| minusWeeks()   |
+|----------------|
+| plusDays()
+| minusDays()
+|---
+| plusHours()
+| minusHours()
+|---
+| plusMinutes()
+| minusMinutes()
+|---
+| plusSeconds()
+| minusSeconds()
+|---
+| plusNanos()
+| minusNanos()
+
+
+### Working with Periods
+
+```
+var annually = Period.ofYears(1);   // every 1 year
+var quarterly = Period.ofMonths(3);  // every 3 months
+var weekely = Period.ofWeeks(1);
+var everyThreeDays = Period.ofDays(3);
+var everyYearAndWeek = Period.of(1, 0, 7);
+
+System.out.println(Period.of(2, 3, 10));   // P2Y3M10D
+
+```
+
+Period methods cannot be chained:
+```
+var wrong = Period.ofYears(1).ofWeeks(1);  // every week
+```
+
+```
+jshell> public static void main(String[] args) {
+   ...>   var start = LocalDate.of(2026, 1, 1);
+   ...>   var end = LocalDate.of(2026, 3, 30);
+   ...>   var period = Period.ofMonths(1);  // create a period
+   ...>   performAnimalEnrichment(start, end, period);
+   ...> }
+|  created method main(String[]), however, it cannot be invoked until method performAnimalEnrichment(java.time.LocalDate,java.time.LocalDate) is declared
+
+jshell> private static void performAnimalEnrichment(
+   ...>     LocalDate start, LocalDate end, Period period) {  // uses generic period
+   ...>   var upTo = start;
+   ...>   while (upTo.isBefore(end)) { // check if still before end
+   ...>     System.out.println("give new toy: " + upTo);
+   ...>     upTo = upTo.plus(period);  // add a period
+   ...>   }
+   ...> }
+|  created method performAnimalEnrichment(LocalDate,LocalDate)
+
+jshell> main(new String[]{});
+give new toy: 2026-01-01
+give new toy: 2026-02-01
+give new toy: 2026-03-01
+
+```
+
+Periods can only be added or subtracted to `LocalDate`, `LocalDateTime`, and 
+`ZonedDateTime`. That is, periods cannot be use with `LocalTime` objects.
+
+
+### Working with Durations
+
+Duration is intended for work with *smaller* units of time, specially, less than a 
+day. For Duration, we can specify the number of days, hours, minutes, seconds, or 
+nanoseconds. Although we can pass 365 days to make a year, we shouldn't.
+
+```
+var daily = Duration.ofDays(1);   // PT24H
+var hourly = Duration.ofHours(1);  // PT1H
+var everyMinute = Duration.ofMinutes(1);  // PT1M
+var everyTenSec = Duration.ofSeconds(10);  // PT10S
+var everyMilli = Duration.ofMillis(1);  // PT0.001S
+var everyNano = Duration.ofNanos(1);  // PT0.000000001S   0.000_000_001S
+```
+
+Duration doesn't have a factory method that takes multiple units like Period does. If 
+we want something to happen ever hour and a half, we need to specify 90 minutes.
+
+Duration includes another more generic factory method. It takes a number and a 
+`TemporalUnit`. The idea is something like "5 seconds". However, `TemporalUnit` is an 
+interface and ate the moment, there is only one implementation named `ChronoUnit`.
+
+Using `ChronoUnit` the previous example can be rewritten like this:
+```
+var daily = Duration.of(1, ChronoUnit.DAYS);
+var hourly = Duration.of(1, ChornoUnit.HOURS);
+...
+```
+
+ChronoUnit also includes some convenient units such as `ChronoUnit.HALF_DAYS` to 
+represent 12 hours.
+
+ChronoUnit is a great way to determine how far apart two Temporal values are. 
+Temporal includes LocalDate, LocalTime, and so on. ChronoUnit is in the 
+java.time.temporal package. 
+
+```
+import java.time.temporal.*
+var one = LocalTime.of(5, 15);
+var two = LocalTime.of(6, 30);
+var data = LocalDate.of(2016, 1, 20);
+
+System.out.println(ChronoUnit.HOURS.between(one, two));  // 1   (truncate, instead of round) 
+System.out.println(ChronoUnit.MINUTES.between(one, two));  // 75
+System.out.println(ChonoUnit.MINUTES.between(one, date));  // DateTimeException
+```
+
+Using a Duration works the same way as using a Period. Examples:
+```
+jshell> var date = LocalDate.of(2026, 1, 20);
+date ==> 2026-01-20
+
+jshell> var time = LocalTime.of(6, 15);
+time ==> 06:15
+
+jshell> var dateTime = LocalDateTime.of(date, time);
+dateTime ==> 2026-01-20T06:15
+
+jshell> var duration = Duration.ofHours(23);
+duration ==> PT23H
+
+jshell> System.out.println(time.plus(duration));
+05:15
+
+jshell> System.out.println(dateTime.plus(duration));
+2026-01-21T05:15
+```
+
+Note that when we add an amount of time to a time and the result exceeds 24H, it 
+simply wraps around, like a clock. In the other hand, if the object has an unit of 
+that time that support the new value, it increases it.
+
+### Period vs Duration
+
+Period and Duration are not equivalent, this example shows a Period and a Duration of 
+the same length:
+
+```
+var date = LocalDate.of(2026, 5, 25);
+var period = Period.ofDays(1);
+var days = Duration.ofDays(1);
+
+System.out.println(date.plus(period));   // 2026-05.26
+System.out.println(date.plus(days));  Unsupported unit: Seconds
+```
+
+### Working with Instants
+
+The `Instant` class represent a specific moment in time in the GMT time zone. 
+
+```
+var now = Instant.now();
+// do something time consuming
+var later = Instant.now();
+
+var duration = Duration.between(now, later);
+System.out.println(duration.toMillis());  // return number milliseconds
+```
+
+We can convert a ZonedDateTime to an Instant:
+```
+jshell> var date = LocalDate.of(2026, 5, 25);
+date ==> 2026-05-25
+
+jshell> var time = LocalTime.of(11, 55, 00);
+time ==> 11:55
+
+jshell> var zone = ZoneId.of("America/Sao_Paulo");
+zone ==> America/Sao_Paulo
+
+jshell> var zonedDateTime = ZonedDateTime.of(date, time, zone);
+zonedDateTime ==> 2026-05-25T11:55-03:00[America/Sao_Paulo]
+
+jshell> var instant = zonedDateTime.toInstant();
+instant ==> 2026-05-25T14:55:00Z
+
+jshell> System.out.println(zonedDateTime);
+2026-05-25T11:55-03:00[America/Sao_Paulo]
+
+jshell> System.out.println(instant);
+2026-05-25T14:55:00Z
+```
+
+We cannot convert a LocalDateTime to an Instant because an Instant represent a *point 
+in time* and a LocalDateTime does not contain a time zone, so it is not universally recognized around the world as the same moment in time.
+
+
+### Daylight Saving Time
+
+On the exam, only U.S. daylight saving time is worked. The act of moving the clock forward or back occurs at 2:00 a.m., which falls very early Sunday morning. 
+
+```
+jshell> var date = LocalDate.of(2022, Month.MARCH, 13);
+date ==> 2022-03-13
+
+jshell> var time = LocalTime.of(1, 30);
+time ==> 01:30
+
+jshell> var zone = ZoneId.of("US/Eastern");
+zone ==> US/Eastern
+
+jshell> var dateTime = ZonedDateTime.of(date, time, zone);
+dateTime ==> 2022-03-13T01:30-05:00[US/Eastern]
+
+jshell> System.out.println(dateTime);
+2022-03-13T01:30-05:00[US/Eastern]
+
+jshell> System.out.println(dateTime.getHour());
+1
+
+jshell> System.out.println(dateTime.getOffset());
+-05:00
+
+jshell> dateTime = dateTime.plusHours(1);
+dateTime ==> 2022-03-13T03:30-04:00[US/Eastern]
+```
+Note how the hour goes from 1 to 3 and the UTC offset changes to -04. 
+
+**Java knows when the time zones changes for day light save time**, so it suppress 
+the hour that do not exist in the day of change, in March. In the other way around, 
+it adds the extra hour when the day light savings ends in November. 
+
+So, if we try to create a ZondeDateTime at 2:30 in March, on the day of change, the 
+time will go automatically to 3:30. In the contrary, if we create a ZonedDateTime 
+at 1:30 in November, in the day of change, this time will be consider *the first* 
+1:30, if we add an hour, we will still at 1:30. This occurs because in the day of 
+change in November, the period between 1:00 and 1:59 occurs twice. In march, the 
+period between 2:00 and 2:59 is suppressed.
+
+
 
 
