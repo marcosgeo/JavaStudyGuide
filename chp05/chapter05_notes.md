@@ -265,3 +265,206 @@ converts these two values to an array of length 2. Line 9 passes 1 as start and 
 array of length 2 directly as steps.
 
 
+## Applying Access Modifiers
+
+There are four access modifiers in Java: private, package, protected, and public. We 
+are going to discuss them in order from most restrictive to least restrictive:
+ - **private**: only accessible within the same class.
+ - *Package access*: private plus other members of the same package. Sometime referred to as package-private or default access.
+ - **protected**: package access plus access within sub-classes.
+ - **public**: protected plus classes in the other packages.
+ 
+### Private Access
+ 
+Consider the class diagram below to explore private and package access. The external 
+boxes are packages and the inside boxes are classes.
+
+  +----------------------------------------------------+
+  | pond.duck                                          |
+  |  +----------------+          +-----------------+   |
+  |  |                |          |                 |   |
+  |  |   FatherDuck   |          |   MotherDuck    |   |
+  |  |                |          |                 |   |
+  |  +----------------+          +-----------------+   |
+  |                                                    |
+  |  +----------------+          +-----------------+   |
+  |  |                |          |                 |   |
+  |  |  BadDuckling   |          |  GoodDuckling   |   |
+  |  |                |          |                 |   |
+  |  +----------------+          +-----------------+   |
+  +----------------------------------------------------+
+
+  +-------------------------+
+  | pond.swan               |
+  |  +---------------+      |
+  |  |               |      |
+  |  |   BadCygnet   |      |
+  |  |               |      |
+  |  +---------------+      |
+  |                         |
+  +-------------------------+
+
+Based on this diagram this is a perfectly legal code because everything is one class:
+```
+package pond.duck;
+public class FatherDuck {
+  private String noise = "quack";
+  private void quack() {
+    System.out.print(noise);    // private access is ok
+  }
+}
+```
+Adding another class:
+```
+package pond.duck;
+public class BadDuckling {
+  public void makeNoise() {
+    var duck = new FatherDuck();
+    duck.quack();    // does not compile
+    System.out.print(duck.noise);    // does not compile
+  }
+}
+```
+`BadDuckling` is trying to access an instance variable and a method it has no business 
+touching. On `duck.quack()` tries to access a private method in another class. 
+On `duck.noise` it tries to access a private instance variable in another class.
+
+In this example, `FatherDuck` and `BadDuckling` are in separate files, but what if the 
+were declared in the same file? Even then, the code will not compile as Java prevents 
+access outside the class.
+
+
+### Package Access
+
+`MotherDuck` is more accommodating about what her ducklings can do. She allows class 
+in the same package to access her members. When there is no access modifier, Java 
+assumes package access.
+```
+package pond.duck;
+public class MotherDuck {
+  String noise = "quack";
+  void quack() {
+    System.out.print(noise);    // package access is ok
+  }
+}
+```
+`MotherDuck` can refer to `noise` and call `quack()`. After all, members in the same 
+class are certainly in the same package. The big difference is that `MotherDuck` lets 
+other classes in the same package access members, whereas `FatherDuck` does not (due 
+to being private). `GoodDuckling` has a much better experience than `BadDuckling`:
+```
+package pond.duck;
+public class GoodDucling {
+  public void makeNoise() {
+    var duck = new MotherDuck();
+    duck.quack();     // package access is ok
+    System.out.print(duck.noise);    // package access is ok
+  }
+}
+```
+`GoodDuckling` succeeds in learning to `quack()` and make noise by copying its mother. 
+Notice that all the classes covered so far are in the same package, `pond.duck`. This 
+allows packages to work.
+
+In the same pond, there is a baby swan, *a cygnet*, that tries to learn to quack from 
+`MotherDuck` as well:
+```
+package pond.swan;
+import pond.duck.MotherDuck;    // import from another package
+public class BadCygnet {
+  public void makeNoise() {
+    var duck = new MotherDuck();
+    duck.quack();    // does not compile
+    System.out.print(duck.noise);    // does not compile
+  }
+}
+```
+`MotherDuck` only allows lessons to other ducks by restricting access to the 
+`pond.duck` package, since that, when there is no access modifier on a member, only 
+classes in the same package can access the member.
+
+### Protected Access
+
+Protected access allows everything that package access does, and more. The `protected` 
+access modifier adds the ability to access member of a parent class. In the following 
+example, the "child" `ClownFish` class is a subclass of the "parent" `Fish` class, 
+using the `extends` keyword to connect them:
+```
+public class Fish {}
+
+public class ClownFish extends Fish {}
+```
+By extending a class, the subclass gains access to all protected and public members of 
+the parent class, as if they (the member) were declared in the subclass. If the two 
+classes are in the same package, the the subclass also gains access to all package 
+members.
+
+
+For the next classes, visit this figure along.
+
+Figure 5.3: classes to show protected access
+
+    +------------------------+          +---------------------------+
+    | pond.shore             |          | pond.goose                |
+    |  +------------------+  |          |   +-------------------+   |
+    |  |                  |  |          |   |                   |   |
+    |  |     `Bird`       |  |          |   |     `Gosling`     |   |
+    |  |                  |  |          |   |   (extend Bird)   |   |
+    |  +------------------+  |          |   +-------------------+   |
+    |                        |          |                           |
+    |  +------------------+  |          |   +-------------------+   |
+    |  |                  |  |          |   |                   |   |
+    |  |  `BirdWatcher`   |  |          |   |      `Goose`      |   |
+    |  |                  |  |          |   |   (extend Bird)   |   |
+    |  +------------------+  |          |   +-------------------+   |
+    +------------------------+          +---------------------------+
+
+  +-----------------------------+        +-------------------------+
+  | pond.inland                 |        | pond.swan               |
+  |  +-----------------------+  |        |   +-----------------+   |
+  |  |                       |  |        |   |                 |   |
+  |  | `BirdWatcherFromAfar` |  |        |   |     `Swan`      |   |
+  |  |                       |  |        |   |  (extend Bird)  |   |
+  |  +-----------------------+  |        |   +-----------------+   |
+  +-----------------------------+        +-------------------------+
+
+  +-------------------------+
+  | pond.duck               |
+  |  +-----------------+    |
+  |  |                 |    |
+  |  | `GooseWatcher`  |    |
+  |  |                 |    |
+  |  +-----------------+    |
+  |                         |
+  +-------------------------+
+
+```
+package pond.shore;
+public class Bird {
+  protected String text = "floating";
+  protected void floatInWater() {
+    System.out.print(text);    // protected access is ok
+  }
+}
+```
+A subclass
+```
+package pond.goose;    // different package than bird
+import pond.shore.Bird;
+public class Gosling extends Bird {    // Gosling is a subclass of Bird
+  public void swin() {
+    floatInWater();    // protected access is ok
+    System.out.print(text);    // protected access is ok
+  }
+  public static void main(String[] args) {
+    new Gosling().swin();
+  }
+}
+```
+This is a simple subclass. It *extends* the `Bird` class. Extending means creating a 
+subclass that has access to any protected or public members of the parent class. 
+Running this program print "floating" twice: once from calling `flotInWater()`, and 
+once from the print statement `swin()`. Since `Gosling` is a subclass of `Bird`, it 
+can access these members even though it is in a different package.
+
+
