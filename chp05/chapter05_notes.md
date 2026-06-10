@@ -467,4 +467,162 @@ Running this program print "floating" twice: once from calling `flotInWater()`, 
 once from the print statement `swin()`. Since `Gosling` is a subclass of `Bird`, it 
 can access these members even though it is in a different package.
 
+Protected also gives us access to everything that package access does, this means that 
+a class in the same package as `Bird` can access its protected members.
+```
+package pond.shore;    // same package as Bird
+public class BirdWatcher {
+  public void watchBird() {
+    Bird bird = new Bird();
+    bird.floatInWater();    // protected access is ok
+    System.out.print(bird.text);    // protected access is ok
+  }
+}
+```
+The definition of protected allows access to sub-classes and classes in the same 
+package. This example uses the same package part of that definition.
+
+Now something different.
+```
+package pond.inland;     // diferent package than bird
+import pond.shore.Bird;
+public class BirdWatcherFromAfar {    // not a subclass of Bird
+  public void watchBird() {
+    Bird bird = new Bird();
+    bird.floatInWater();    // does not compile
+    System.out.print(bird.text);    // does not compile
+  }
+}
+```
+`BirdWatcherFromAfar` is not in the same package as `Bird`, and it does not inherit 
+from `Bird`. This means it is not allowed to access protected members of `Bird`. 
+*Sub-classes and classes in the sames package are the only ones allowed to access 
+protected members*.
+
+There is one gotcha fore protected access. Consider this:
+```
+1:  packge pond.swan;    // different package than Bird
+2:  import pond.shore.Bird;
+3:  public class Swan extends Bird {    // Swan is a subclass of Bird
+4:    public void swim() {
+5:      floatInWater();    // protected access is ok
+6:      System.out.print(text);    // protected acces is ok
+7:    }
+8:    public void helpOtherSwanSwin() {
+9:      Swan other = new Swan();
+10:     other.floatInWater();    // subclass access to superclass
+11:     System.out.print(other.text);    // subclass acces to superclass
+12:   }
+13:   public void helpOtherBirdSwim() {
+14:     Bird other = new Bird();
+15:     other.floatInWater();    // does not compile
+16:     Sytem.out.print(other.text);    // does not compile
+17:   }
+18: }
+```
+Lines 5 and 6 refers to protected members via inheritance.
+
+Lines 10 and 11 because they refer to a `Swan` object that **inherits** from `Bird`. 
+It is sort of a two-phase check.
+
+Lines 15 and 16 do *not* compile. But the are almost exactly the same as lines 10 
+and 11! But **they are an object from other class**, `Bird`, that resides **in 
+another package**. These two lines of code are simply in the same file as the lines 10 
+and 11, but they not *inherit* from `Bird`. The `extends` on line 3 applies to `Swan` 
+objects. So, since the object `other` on line 14 creates an object `Bird` outside the 
+package it is not allowed to him access protected member.
+
+Another examples.
+```
+package pond.goose;
+import pond.shore.Bird;
+public class Goose extends Bird {
+  public void helpGooseSwin() {
+    Goose ohter = new Goose();
+    other.floatInWater();
+    System.out.print(ohter.text);
+  }
+  public void helpOtherGooseSwim() {
+    Bird other = new Goose();
+    other.floatInWater();    // does not compile
+    System.out.print(other.text);    // does not compile
+  }
+}
+```
+The problem with the second method is that, although the object happens to be a 
+`Goose`, it is stored in a `Bird` reference. We are not allowed to refer to members of 
+the `Bird` class since we are no in the same package and the reference type is not a 
+subclass of `Goose`. In essence, is a `Bird` object outside the package, so, **only 
+the public methods are available here**.
+
+What about this?
+```
+package pond.duck;
+import pond.goose.Goose;
+public class GooseWatcher {
+  public void watch() {
+    Goose goose = new Goose();
+    goose.floatInWater();    // does not compile
+  }
+}
+```
+This code does not compile because we are not in the same package as `Goose` class. 
+The `floatInWater()` method is declared in in `Bird`. `GooseWater` is not in the same 
+package, and it does not extend `Bird`.
+
+
+### Public Access
+
+The last type of access modifier is easy: public means anyone can access the member 
+from anywhere. Java will define "anywhere" in a way that it restrict "anywhere" 
+outside of a "module" (chapter 12).
+
+A class that public members:
+```
+package pond.duck;
+public class DuckTeacher {
+  public String name = "helpful";
+  public void swinm() {
+    System.out.print(name);    // public access is ok
+  }
+}
+```
+
+`DuckTeacher` allows access to any class that wants it. Now we can try it:
+```
+package pond.goose;
+import pond.duck.DuckTeacher;
+public class LostDuckling {
+  public void swim() {
+    var teacher new DuckTeacher();
+    teacher swim();    // allowed
+    System.out.print("Thanks " + teacher.name);    // allowed
+  }
+}
+```
+
+`LostDuckling` is able to refer to `swim()` and `name` on `DuckTeacher` because they 
+are public. 
+
+
+### Reviewing Access Modifiers
+
+Table 5.4: A method in _______________ can access a ________________ member.
+
++-----------------------------------------------------------------------------------+
+|                                           | private | package | protected | public |
++-------------------------------------------+---------+---------+-----------+--------+
+| the same class                            |   Yes   |   Yes   |   Yes     |  Yes   |
++-------------------------------------------+---------+---------+-----------+--------+
+| another class in the same package         |   No    |   Yes   |   Yes     |  Yes   |
++-------------------------------------------+---------+---------+-----------+--------+
+| a subclass in a different package         |   No    |   No    |    Yes    |  Yes   |
++-------------------------------------------+---------+---------+-----------+--------+
+| an unrelated class in a different package |   No    |   No    |    No     |  Yes   |
++-------------------------------------------+---------+---------+-----------+--------+
+
+
+## Accessing *static* Data
+
+
 
