@@ -28,7 +28,7 @@ throws: exception (optional)
 
 An access modifier determines what classes a method can be accessed from.
  - **private** determines that the method cab be called on from within the same class.
- - *package access* **no specific keyword**, the method can be called only from a class int the same package.
+ - *package access*, **no specific keyword**, the method can be called only from a class int the same package.
  - **protected** indicated that the method can be called only from a class in the same package or subclass.
  - **public** indicates that the method can be called from anywhere.
 
@@ -59,6 +59,7 @@ public class Exercise {
   public final static void bike4() {}
   public void final bike5() {}  // does not compile
   final public void bike6() {}
+}
 ```
 
 ### Parameters List & Method Signature
@@ -279,30 +280,30 @@ are going to discuss them in order from most restrictive to least restrictive:
 Consider the class diagram below to explore private and package access. The external 
 boxes are packages and the inside boxes are classes.
 
-  +----------------------------------------------------+
-  | pond.duck                                          |
-  |  +----------------+          +-----------------+   |
-  |  |                |          |                 |   |
-  |  |   FatherDuck   |          |   MotherDuck    |   |
-  |  |                |          |                 |   |
-  |  +----------------+          +-----------------+   |
-  |                                                    |
-  |  +----------------+          +-----------------+   |
-  |  |                |          |                 |   |
-  |  |  BadDuckling   |          |  GoodDuckling   |   |
-  |  |                |          |                 |   |
-  |  +----------------+          +-----------------+   |
-  +----------------------------------------------------+
+    +----------------------------------------------------+
+    | pond.duck                                          |
+    |  +----------------+          +-----------------+   |
+    |  |                |          |                 |   |
+    |  |   FatherDuck   |          |   MotherDuck    |   |
+    |  |                |          |                 |   |
+    |  +----------------+          +-----------------+   |
+    |                                                    |
+    |  +----------------+          +-----------------+   |
+    |  |                |          |                 |   |
+    |  |  BadDuckling   |          |  GoodDuckling   |   |
+    |  |                |          |                 |   |
+    |  +----------------+          +-----------------+   |
+    +----------------------------------------------------+
 
-  +-------------------------+
-  | pond.swan               |
-  |  +---------------+      |
-  |  |               |      |
-  |  |   BadCygnet   |      |
-  |  |               |      |
-  |  +---------------+      |
-  |                         |
-  +-------------------------+
+    +-------------------------+
+    | pond.swan               |
+    |  +---------------+      |
+    |  |               |      |
+    |  |   BadCygnet   |      |
+    |  |               |      |
+    |  +---------------+      |
+    |                         |
+    +-------------------------+
 
 Based on this diagram this is a perfectly legal code because everything is one class:
 ```
@@ -419,24 +420,25 @@ Figure 5.3: classes to show protected access
     |  +------------------+  |          |   +-------------------+   |
     +------------------------+          +---------------------------+
 
-  +-----------------------------+        +-------------------------+
-  | pond.inland                 |        | pond.swan               |
-  |  +-----------------------+  |        |   +-----------------+   |
-  |  |                       |  |        |   |                 |   |
-  |  | `BirdWatcherFromAfar` |  |        |   |     `Swan`      |   |
-  |  |                       |  |        |   |  (extend Bird)  |   |
-  |  +-----------------------+  |        |   +-----------------+   |
-  +-----------------------------+        +-------------------------+
+    +-----------------------------+        +-------------------------+
+    | pond.inland                 |        | pond.swan               |
+    |  +-----------------------+  |        |   +-----------------+   |
+    |  |                       |  |        |   |                 |   |
+    |  | `BirdWatcherFromAfar` |  |        |   |     `Swan`      |   |
+    |  |                       |  |        |   |  (extend Bird)  |   |
+    |  +-----------------------+  |        |   +-----------------+   |
+    +-----------------------------+        +-------------------------+
 
-  +-------------------------+
-  | pond.duck               |
-  |  +-----------------+    |
-  |  |                 |    |
-  |  | `GooseWatcher`  |    |
-  |  |                 |    |
-  |  +-----------------+    |
-  |                         |
-  +-------------------------+
+    +-------------------------+
+    | pond.duck               |
+    |  +-----------------+    |
+    |  |                 |    |
+    |  | `GooseWatcher`  |    |
+    |  |                 |    |
+    |  +-----------------+    |
+    |                         |
+    +-------------------------+
+
 
 ```
 package pond.shore;
@@ -609,20 +611,316 @@ are public.
 
 Table 5.4: A method in _______________ can access a ________________ member.
 
-+-----------------------------------------------------------------------------------+
-|                                           | private | package | protected | public |
-+-------------------------------------------+---------+---------+-----------+--------+
-| the same class                            |   Yes   |   Yes   |   Yes     |  Yes   |
-+-------------------------------------------+---------+---------+-----------+--------+
-| another class in the same package         |   No    |   Yes   |   Yes     |  Yes   |
-+-------------------------------------------+---------+---------+-----------+--------+
-| a subclass in a different package         |   No    |   No    |    Yes    |  Yes   |
-+-------------------------------------------+---------+---------+-----------+--------+
-| an unrelated class in a different package |   No    |   No    |    No     |  Yes   |
-+-------------------------------------------+---------+---------+-----------+--------+
+    +-------------------------------------------------------------------------------+
+    |                                      | private | package | protected | public |
+    +--------------------------------------+---------+---------+-----------+--------+
+    | the same class                       |   Yes   |   Yes   |   Yes     |  Yes   |
+    +--------------------------------------+---------+---------+-----------+--------+
+    | another class in the same package    |   No    |   Yes   |   Yes     |  Yes   |
+    +--------------------------------------+---------+---------+-----------+--------+
+    | a subclass in a different package    |   No    |   No    |    Yes    |  Yes   |
+    +--------------------------------------+---------+---------+-----------+--------+
+    | an unrelated class in a diff package |   No    |   No    |    No     |  Yes   |
+    +--------------------------------------+---------+---------+-----------+--------+
 
 
 ## Accessing *static* Data
 
+When the `static` keyword is applied to a variable, method, or class, it belongs to 
+the class rather than a specific instance. This keyword can also be applied to 
+import statements.
+
+### Designing *static* Methods and Variables
+
+Methods and variables declared `static` don't require an instance of the class. They 
+are shared among all users of the class.
+```
+public class Penguin {
+  String name;
+  static String nameOfTallestPenguin;
+}
+```
+In this class, every `Penguin` instance has its own name, but only on `Penguin` among 
+all the instances is the tallest. We access static members using the class name: 
+`Penguin.nameOfTallestPenguin`.
+
+**The main**
+```
+public class Koala {
+  public static int count = 0;    // static variable
+  public static void main(String[] args) {    // static method
+    System.out.print(count);
+  }
+}
+```
+Since this class has a *main* method, JVM calls `Koala.main()` to start the program. 
+We also can call this method.
+```
+public class KoalaTester {
+  public static void main(String[] args) {
+    Koala.main(new String[0]);    // call static method
+  }
+}
+```
+Here `KoalaTester` has the only purpose of start the `Koala` program and this shows us 
+that the `main()` can be called like any other static methods.
+
+In addition to `main()` methods, static members have two main purposes:
+ - for *utility* or *helper* methods that don't require any object state.
+ - for *state* that is shared by all instances of a class, like a counter. 
+
+**A trick**
+```
+public class Snake {
+  public static long hiss = 2;
+}
+System.out.println(Snake.hiss);  // 2
+
+var s = new Snake();
+System.out.print(s.hiss); // 2
+s = null;
+System.out.print(s.hiss);  // 2
+```
+This happens because when we call a static method from an object, the compiler checks 
+for the object type of the reference and uses that instead of the object.
+
+
+### Class vs. Instance Membership
+
+A static member cannot call an instance member without referencing an instance of the 
+class.
+```
+public class MantaRay {
+  private String name = "Sammy";
+  public static void first() {}
+  public static void second() {}
+  public void third() { System.out.print(name);}
+  public static void main(String[] args) {
+    first();
+    second();
+    third();    // does not compile
+  }
+}
+```
+The compiler will give us an error about making a static reference to an instance 
+method. To fix the problem we have to do this:
+```
+public class MantaRay {
+  private String name = "Sammy";
+  ...
+  public static void main(String[] args {
+    ...
+    var ray = new MantaRay();
+    ray.third();
+  }
+}
+```
+
+### *static* Variable Modifiers
+
+Some static variables are meant to never change. This type of static variable is 
+called *constant*. It uses the `final` modifier to ensure the variable never changes.
+They also uses a different naming convention than other variables, they use all 
+uppercase letters with underscores between "words".
+```
+public class ZooPen {
+  private static final int NUM_BUCKETS = 45;
+  public static void main(String[] args) {
+    NUM_BUCKETS = 5;   // does not compile
+  }
+}
+```
+The compiler will make sure that we to not accidentally try to update a final 
+variable. Note that the *value is a primitive*, if the *value were a reference value* 
+the things are a little different.
+```
+import java.ulti.*;
+public class ZooInventoryManager {
+  private static final String[] treats = new String[10];
+  public static void main(String[] args) {
+    treats[0] = "popcorn";
+  }
+}
+```
+We are allowed to modify the reference object or array's contents. What the compiler 
+prevents us to do is *reassign* the variable, in this case `treats`, to point to a 
+different object.
+
+
+### *static* Initializers
+
+The rules for static final variables are similar to instance final variables, except 
+they to not use static constructors and use **static initializers** instead of 
+instance initializers.
+```
+public class Panda {
+  final static String name = "Ronda";
+  static final int bamboo;
+  static final double height;    // does not compile
+  static { bamboo = 5; }
+}
+```
+The `name` variable is assigned a value when it is declared, while the `bamboo` 
+variable is assigned a value in a **static initializer**. The `height` variable is not 
+assigned a value anywhere in the class definition, so that line does not compile.
+
+
+In chapter 1, **instance initializers** were covered, they looked like unnamed 
+methods - is just code inside braces. **static initializer** look similar, we add 
+the `static` keyword to specify that they should be run when the class is first 
+loaded. An example:
+```
+private static final int NUM_SECONDS_PER_MINUTE;
+private static final int NUM_MINUTES_PER_HOUR;
+private static final int NUM_SECONDS_PER_HOUR;
+static {
+  NUM_SECONDS_PER_MINUTE = 60;
+  NUM_MINUTES_PER_HOUR = 60;
+}
+static {
+  NUM_SECONDS_PER_HOUR = NUM_SECONDS_PER_MINUTE * NUM_MINUTES_PER_HOUR;
+}
+```
+All static initializers run when the class is first used, in the order they are 
+defined. The statements in them run and assign any static variables as needed. 
+
+Note that although *final variables can't be reassigned*, the point here is that the 
+**static initializer is the first assignment**. And since it occurs up front, it is 
+okay.
+
+
+### *static* Imports
+
+Imports are convenient because we do not to specify where each class comes from each 
+time we need use it. There is another type of import called *static import* that we 
+use to **import static member of a class**. 
+The syntax is `import static package.Class.member`:
+```
+import java.utils.List;
+import static java.util.Arrays.asList;    // static import
+public class ZooParking {
+  public static void main(String[] args) {
+    List<String> list = asList("one", "two");    // no Arrays.prefix
+  }
+}
+```
+If we not use `import static` the code should be this:
+```
+import java.utils.List;
+import java.utils.Arrays;
+public class ZooParking {
+  public static void main(String[] args) {
+    List<String> list = Arrays.asList("one", "two");    // using the class prefix
+  }
+}
+```
+Clearly, is a good convenience use `import static`. Is we write a method called 
+`asList` in our class `ZooParking`, Java will use our method instead of the imported. 
+Importing two classes or two static methods with the same name will cause a compiler 
+error. 
+
+
+## Passing Data among Methods
+
+Java is a "pass-by-value" language. This means that a copy of the variable is made and 
+the method receives that copy. Assignments made in the method do not affect the 
+caller.
+```
+public class Dog {
+  public static void main(String[] args) {
+    String name = "Webby";
+    speak(name);
+    System.out.print(name);    // Webby
+  }
+  public static void spean(String name) {
+    name = "Georgette";
+  }
+}
+```
+The `name` variable on `speak()` method could be anything, but in the exam they will 
+use this strategy to try to confuse us.
+
+**Calling methods on a reference to an object can affect the caller**. This is 
+what occurs here:
+```
+public class Dog {
+  public static void main(String[] args) {
+    var name = new StringBuilder("Webby");
+    speak(name);
+    System.out.print(name);    // WebbyGeorgette
+  }
+  public static void speak(StringBuilder sb) {
+    sb.append("Georgette");
+  }
+}
+```
+In this case, `speak()` call a method on the parameter. I doesn't reassigns to a 
+different object.
+
+## Returning Objects
+
+Getting data back from a method is simple: a copy is made of the primitive or 
+reference and returned from the method. This value can be used (normally) or ignored 
+(sometimes). In the exam, is common to ignore value as strategy to deceive us.🙃
+
+
+## Autoboxing and Unboxing Variables
+
+Java supports some helpful features around passing primitives and wrapper data types, 
+such as `int` and `Integer`. Although we can explicitly convert between *primitives* 
+and *wrapper* classes, it is verbose:
+```
+int quack = 5;
+Integer quackquack = Integer.valueOf(quack);    // convert int to Integer
+int quackquackquack = quackquack.intValue();    // convert Integer to int
+```
+
+Luckily, Java has handlers built into the language that automatically convert between 
+primitives and wrapper classes and vice-versa. *Autoboxing* is the process of 
+converting a primitive into its equivalent wrapper class, while *unboxing* is the 
+process of converting a wrapper class int its equivalent primitive.
+```
+int quack = 5;
+Integer quackquack = quack;    // autoboxing
+int quackquackquack = quackquck;    // unboxing
+```
+The new code is equivalent to the previous code, as the compiler is "doing the work" 
+of converting the types automatically for us.
+
+### Limits of Autoboxing and Numeric Promotion
+
+Java will implicitly cast a smaller primitive to a larger type, as well as 
+*autoboxing*, it will not not do both ate the same time.
+```
+Long badGorilla = 8;    // does not ompilet
+```
+Here, first have to occur a *cast* from the primitive `int` to other primitive `long` 
+and than an *autoboxing* from the primitive `long` to the *wrapper* `Long`. This is 
+what have to done:
+```
+long gorila1 = 8;    // cast from int to long
+Long gorila2 = gorila1;    // autoboxing long to Long
+```
+
+Where autoboxing and unboxing really shine is when we apply them to method calls.
+```
+public class Chimpanzee {
+  public void climb(long t) {}
+  public void swing(Integer u) {}
+  public void jump(int v) {}
+  public static void main(String[] args) {
+    var c = new Chimpanzee();
+    c.climb(123);
+    c.swing(123);
+    c.jump(123L);    // does not compile
+  }
+}  
+```
+In this example, the call to `climb()` compiles because the `int` value cab be 
+implicitly cast to a `long`. The call to `swing()` also is permitted, because the 
+`int` value is *autoboxed* to an `Integer`. On the other hand, the call to `jump()` 
+results in a compiler error because a long must be explicitly cast to an int.
+
+## Overloading Methods
 
 
