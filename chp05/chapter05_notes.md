@@ -923,4 +923,210 @@ results in a compiler error because a long must be explicitly cast to an int.
 
 ## Overloading Methods
 
+*Method overloading* occurs when methods in the same class have the same name but 
+**different signatures**, which means they use different parameter lists.
+```
+public class Falcon {
+  public void fly(int numMiles) {}
+  public void fly(short numFeet) {}
+  public boolean fly() {return faslse;}
+  void fly(int numMiles, short numFeet) {}
+  public void fly(short numFeet, int numMiles) throws Exception {}
+}
+```
+As we can see, we can overload by changing anything in the parameter list. We can have 
+a different type, more types, or the same types in a different order. Also notice that 
+the return type, access modifier, and exception list are irrelevant to overloading. 
+**Only the method name and parameter list matter**.
+
+Now, let's look at some more complex scenarios that we may encounter.
+
+### Reference Types
+
+Given the rule about Java picking the mos specific version of a method that it can, 
+what is the output of this code?
+```
+public class Pelican {
+  public void fly(String s) {
+    System.out.print("string");
+  }
+  public void fly(Object o) {
+    System.out.print("object");
+  }
+  public static void main(String[] args) {
+    var p = new pelican();
+    p.fly("test);
+    System.out.print("---");
+    p.fly(56);
+  }
+}
+```
+The answer is "string---object". The first call passe a `String` and finds a direct 
+match. There's no reason to use the `Object` version when there is a nice `String` 
+parameter list just waiting to be called. The second call looks for an int parameter 
+list. When if doesn't find one, it *autoboxes* to `Integer`. Since it still doesn't 
+find a match, it goes to the `Object` one.
+
+Another, what does this code print?
+```
+import java.time.*;
+import java.util.*;
+public class Parrot {
+  public static void print(List<Integer> i) {
+    System.out.print("I");
+  }
+  public static void print(CharSequence c) {
+    System.out.print("C");
+  }
+  public static void print(Object o) {
+    Sytem.out.print("O");
+  }
+  
+  public sttic void main(String[] args) {
+    print("abc");
+    print(Arrays.asList(3));
+    print(LocalDate.of(2026, 6, 13));
+  }
+}
+```
+The answer is "CIO". The first call to `print()` passes a `String`. As we know, 
+`String` and `StringBuilder` implement the `CharSequence` interface. We also know that 
+`Arrays.asList()` can be used to create a `List<Integer>` object, which explains the 
+second output. The final call to `print()` passes a `LocalDate`, which clearly isn't a 
+sequence of characters or a list. That means the `Object` method signature is used.
+
+
+### Primitives
+
+Primitives work in a way that's similar to reference variables. Java tries to find 
+the most specific matching overloaded method. What happens here?
+```
+public class Ostrich {
+  public void fly(int i) {
+    System.out.print("int");
+  }
+  public void fly(long i) {
+    System.out.print("long");
+  }
+  public static void main(String[] args) {
+    var p = new Ostrich();
+    p.fly(123);
+    System.out.print("---");
+    p.fly(123L);
+  }
+}
+```
+The answer is "int---long". The first call passes an `int` and sees an exact match. 
+The second call passes a `long` and also sees an exact match. If we comment out the 
+overloaded method with the `int` parameter lit, the output becomes "long---long". 
+Java has no problem calling a large primitive, however, it will not do so unless a 
+better match is not found.
+
+
+### Autoboxing
+
+As we saw earlier, autoboxing applies to method calls, but what happens if we have 
+both a primitive, `int`, and a reference, `Integer`, version?
+```
+public class Kiwi {
+  public void fly(int numMiles) {}
+  public void fly(Integer numMiles) {}
+}
+```
+These method overloads are valid. *Java tries to use the most specific parameter list 
+it can find*. This is true for autoboxing as well as other matching types we see in 
+this section.
+This means calling `fly(3)` will call the first method. When the primitive `int` 
+version isn't present, Java will autobox. However, when the primitive `int` is 
+provided, there is no reason for Java to do the extra work of autoboxing.
+
+
+### Arrays
+
+Unlike the previous example, this code does not autobox:
+```
+public static void walk(int[] ints) {}
+public static void walk(Integer[] integers) {}
+```
+Arrays have been around since the beginning of Java, they specify their actual types. 
+When dealing with generics, things like `List<Integer>` will be covered.
+
+
+### Varargs
+
+Which method will be called if we pass as `int[]`?
+```
+public class Toucan {
+  public void fly(int[] lengths) {}
+  public void fly(int... lengths) {}    // does not compile
+}
+```
+Since Java treats varargs as if the were an array, the method signatures are the same 
+for both methods, and the code will not compile.
+
+Now that we've see that the two methods are similar, it time to see how they are 
+different. It is not a surprise that we can call both method passing an array:
+```
+fly(new int[] {1, 2, 3});    // allow to call either fly() method
+```
+However, we can only call the varargs version with stand-alone parameters:
+```
+fly(1, 2, 3);    // allowed only for varargs methods
+```
+This means they don't compile *exactly* the same. The parameters list is the same, 
+though, and that is what we need to know.
+
+
+### Putting All Together
+
+All the rules for when a overloaded method is called should be logical: Java call the 
+most specific method it can. When some type interact, the Java rules focus on 
+backward compatibility. Since a long time ago, autoboxing and varargs didn't exist, 
+both come last when Java looks at overloaded methods.
+
+Table 5.6: The order that Java use to choose the right overloaded method
+
+    +-------------------------+--------------------------------------------------+
+    |          Rule           |  Example of what will be chosen for glide(1, 2)  |
+    +-------------------------+--------------------------------------------------+
+    |  Exact match by type    |  String glide(int i, int j)                      |
+    +-------------------------+--------------------------------------------------+
+    |  Larger primitive type  |  String glide(long i, long j)                    |
+    +-------------------------+--------------------------------------------------+
+    |  Autoboxed type         |  String glide(Integer i, Integer j)              |
+    +-------------------------+--------------------------------------------------+
+    |  Varargs                |  String glide(int... nums)                       |
+    +-------------------------+--------------------------------------------------+
+
+<br>
+
+A small practice using the rules. What this code outputs?
+```
+public class Glider {
+  public static String glide(String s) {
+    return "1";
+  }
+  public static String glide(String... s) {
+    return "2";
+  }
+  public static String glide(Object o) {
+    return "3";
+  }
+  public static String glide(String s, String t) {
+    return "4";
+  }
+  public static void main(String[] args) {
+    System.out.print(glide("a"));
+    System.out.print(glide("a", "b"));
+    System.out.print(glide("a", "b", "c"))
+  }
+}
+```
+<br>
+It print out "142". The first call matches the signature taking a single `String` 
+because that is the most specific match. The second call matches the signature taking 
+two `String` parameters since that is an exact match. I isn't until the third call 
+that the varargs version is used since there are no better matches.
+
+
 
