@@ -1,5 +1,9 @@
+# Compiling and Running
+
 ## compiling in the same directory
 
+Assuming that the *package name* correspond to *folder name* which is **recommended** 
+but not mandatory.
 ``` 
 javac packagea/ClassA.java packageb/ClassB.java
 tree
@@ -17,15 +21,13 @@ tree
 ```
 ---
 this is also valid:
-javac packagea/*.java packageb/*.java
+`javac packagea/*.java packageb/*.java`
 
 ---
 but this not:
-```
-javac *.java
+`javac *.java`
 
----
-```
+<br>
 
 in the end, this command should execute:
 ```
@@ -84,12 +86,15 @@ A Java archive (JAR) file is like a ZIP file of mainly Java class files.
 `java -cp ".:/temp/directoryWithJARS/*" myPackage.MyClass`
 
 
-The period (.) indicates that you want to include the current directory in the classpath. The rest of the command says to look for loose class files (or packages) in someOtherLocation and within myJar.jar. 
-Windows uses semicolons (;) to separate parts of the classpath; other operating systems use colons.
+The period (.) indicates that you want to include the current directory in the 
+*classpath*. The rest of the command says to look for loose class files (or packages) 
+in `someOtherLocation` and within `myJar.jar`. 
+Windows uses semicolons (;) to separate parts of the *classpath*; other operating 
+systems use colons.
 
-## createing JAR file
+## creating JAR file
 
-The simplest commands to crate a jar containning the files in the current directory is this:
+The simplest commands to crate a jar containing the files in the current directory is this:
 
 ```
 jar -cvf myNewFile.jar .

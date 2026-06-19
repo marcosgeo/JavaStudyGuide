@@ -215,4 +215,186 @@ public class Crocodile extends Reptile {
   }
 }
 ```
+When the method `getSpeed()` is called, Java first checks if there is any *local* 
+variable called `speed`, since there isn't, then it uses `this.speed`. If the 
+`Crocodile` class doesn't has a variable called `speed`, Java will use `super.speed` 
+ant then returning the value of `speed` in the `Reptile` class.
+
+
+## Declaring Constructors
+
+A *constructor* is a method that has no return type and the name matches the name of 
+the class. There are a lot of rules about constructors, we start with how to create a 
+constructor. Then, we look at default constructors, overloading constructors, calling 
+parent constructors, final fields, and the order of initialization.
+
+### Creating a Constructor
+This is a valid constructor:
+```
+public class Bunny {
+  public Bunny() {
+    System.out.print("hop");
+  }
+}
+```
+The name of the constructor, `Bunny`, matches the name of the class, `Bunny`, and 
+there is no return type.
+
+Like method parameters, constructor parameters can be any valid class, array, or 
+primitive type, including generics, but may not include `var`. The following does not 
+compile:
+```
+public class Bonobo {
+  public Bonobo(var food) {    // does not compile
+     ...
+  }
+}
+```
+A class can have multiple constructors, as long as each constructor has a unique 
+constructor signature. Like methods with the same name but different signatures, this 
+is called *constructor overriding*.
+
+Constructors are used when creating a new object. This process is called 
+*instantiation* because it creates a new instance of the class. Example:
+```
+new Turtle(15);
+```
+When Java sees the `new` keyword, it allocates memory form the new object. It then 
+looks for a constructor with a matching signature and calls it.
+
+### The Default Constructor
+
+Every class in Java has a constructor, whether we code one or not. **If we don't** 
+**include any constructors in the class, Java will create one**, without any 
+parameters, for us. This constructor is called *default constructor*.
+```
+public class Rabbit1 {}
+---
+public class Rabbit2 {
+  public Rabbit2() {}
+}
+---
+public class Rabbit3 {
+  public Rabbit3(boolean b) {}
+}
+---
+public class Rabbit4 {
+  private Rabbit4() {}
+}
+```
+Calling this constructors
+```
+public class RabiitsMultiply {
+  public static void main(String[] args) {
+    var r1 = new Rabbit1();
+    var r2 = new Rabbit2();
+    var r3 = new Rabbit3(true);
+    var r4 = new Rabbit4();    // does not compile
+  }
+}
+```
+Since `Rabbit1` nod declares a constructor, a default is created by the compiler and 
+allows that the object `r1` is created. The object `r2` and `r3` are created using 
+public constructors existing in the classes. Because `Rabbit4` has a `private` 
+constructor, it not allow other classes to call it.
+
+### Calling Overloaded Constructors with *this()*
+
+Since a class can contain multiple overloaded constructors, this constructors can call 
+one another. 
+```
+public class Hamster {
+  private String color;
+  private int weight;
+  public Hamster(int weight, String color) {    // first constructor
+    this.weight = weight;
+    this.color = color;
+  }
+  public Hamster(int weight) {    // second constructor
+    this.weight = weight;
+    color = "brown";
+  }
+}   
+```
+This class compile, although there is a bit of duplication, as `this.weight` is 
+assigned the same way in both constructors. Note that calling 
+`Hamster(weight, "brown")` in the second constructor will not work since we need to 
+use the keyword `new` to a constructor be called. Using `new Hamster(weight, "brown")` 
+creates a second object.
+When `this()` is used in this way, with parenthesis, Java calls another 
+constructor in the same instance of the class, so the second constructor should be.
+```
+public class Hamster {
+  ...
+  public Hamster(int weight) {
+    this(weight, "brown");
+  }
+}
+```
+Now Java calls the constructors with two parameters. Calling `this()` has one special 
+rule: **it need to be called in the first statement in the constructor**. Is not 
+permitted calling anything before the `this()`, even a print statement.
+
+### Calling Parent Constructors with *super*
+
+In order to initialize instance members of the *parent class* we need a way to call 
+a constructor in that class. We do this using `super()`.
+
+```
+public class Animal {
+  private int age;
+  public Animal(int age) {
+    super();    // refers to a contstructor in java.lang.Object (Java do this auto//)
+    this.age = age;
+  }
+}
+---
+public class Zebra extends Animal {
+  public Zebra(int age) {
+    super(age);    // refers to a constructor in Animal
+  }
+  public Zebra() {
+    this(5);    // refers to a constructor in Zebra with an int argument
+  }
+}
+```
+The first statement of **every constructor** is a call to a parent constructor using 
+`super()` or another constructor in the class using `this()`. When we not call the 
+constructor of the parent class, Java will do a call `super()` to the constructor of the *superclass* or to the constructor of `Object` class, when the class is nothing 
+inheriting any class. 
+Like calling `this()`, calling `super()` should be the first statement of the 
+constructor.
+
+### Default Constructor Tips and Tricks
+
+When a class defines a constructor, the compiler does not insert a no-argument 
+constructor.
+```
+public class Mammal {
+  public Mammal(int age) {}
+}
+---
+public class Seal extends Mammal {}    // does not compile
+---
+public class Elephant extends Mammal {
+  public Elephant() {}    // does not compile
+}
+```
+Since `Mammal` defines a constructor, the compiler does not insert a no-argument 
+constructor. The compiler will insert a default no-argument constructor into `Seal`, 
+but it will be a simple implementation that just calls a nonexistent parent 
+constructor, like this.
+``` 
+public class Seal extends Mammal {
+  public Seal() {
+    super();    // does not compile
+  }
+}
+```
+`Elephant` will not compile for similar reasons. The compiler doesn't see a call to 
+`super()` or `this()` and it inserts a call to a nonexistent no-argument `super()` 
+automatically. 
+
+In this cases, the compiler will not help, and we need to create at least on 
+constructor in our child classes that explicitly calls a parent constructor.
 
