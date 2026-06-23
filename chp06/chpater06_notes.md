@@ -360,10 +360,26 @@ public class Zebra extends Animal {
 ```
 The first statement of **every constructor** is a call to a parent constructor using 
 `super()` or another constructor in the class using `this()`. When we not call the 
-constructor of the parent class, Java will do a call `super()` to the constructor of the *superclass* or to the constructor of `Object` class, when the class is nothing 
-inheriting any class. 
+constructor of the parent class, Java will do a call to `super()`, the constructor of 
+the *superclass* or the constructor of `Object` class (when the class is nothing 
+inheriting any class). 
 Like calling `this()`, calling `super()` should be the first statement of the 
 constructor.
+The three classes declaration below, result the same one, and Java will make the job 
+of transform the first two in the last one.
+```
+public class Donkey {}
+---
+public class Donkey{
+  public Donkey(){}
+}
+---
+public class Donkey {
+  public Donkey() {
+    super();
+  }
+}
+```
 
 ### Default Constructor Tips and Tricks
 
@@ -397,4 +413,344 @@ automatically.
 
 In this cases, the compiler will not help, and we need to create at least on 
 constructor in our child classes that explicitly calls a parent constructor.
+
+To remember:
+ - the first line of every constructor is a call to a parent constructor using `super()` or an overloaded constructor using `this()`
+ - if the constructor does not contain a `this()` or `super()` reference, the compiler will insert `super()` with no arguments as the first line of the constructor
+ - if a constructor calls `super()`, then it must be the first line of the constructor
+
+
+## Initializing Objects
+
+This sections discuss in detail how the *order of initialization* works, it refers to 
+how member of a class are assigned values.
+
+### Initializing classes
+
+Before initializing an object, first all static members of a class are initialized. 
+**Classes are loaded when they are needed**, that is, when an object of the class is 
+instantiated or a static member is used. This is done in an hierarchical order, with 
+the most base classes starting first. The order is this:
+
+ - 1. if there is a superclass Y of X, then initialize Y first.
+ - 2. process all static variable declarations in the order in which they appear in the class
+ - 3. process all static initializers in the order in which they appear in the class
+
+Taking a look at an example, what does the following program print?
+```
+public class Animal {
+  static {System.out.print("A);}
+}
+---
+public class Hippo extends Animal {
+  String color = "brown";
+  public static void main(String[] args) {
+    System.out.print("C");
+    new Hippo();
+    new Hippo();
+    new Hippo();
+  }
+  static {System.out.print("B");}
+}
+```
+It prints "ABC" exactly once. Since the `main()` method is inside the `Hippo` class, 
+the class will be initialized first, starting with the superclass and going to the 
+*static initializer*, printing "AB". Afterward, the `main()` method is executed, 
+printing "C". Even though the `main()` method created three instances, the class is 
+loaded only once.
+
+In the previous example, note that all the class members, are initialized before the 
+`main()` method. If we have other class that instantiate `Hippo`, we have:
+```
+public class HippoFriend {
+  public static void main(String[] args) {
+    System.out.print("C");
+    new Hippo();
+  }
+}
+```
+Assuming the `Hippo` class isn't reference anywhere else, this program will *likely* 
+print "CAB", with the `Hippo` class **not being loaded until it is needed** inside the 
+`main()` method. It is likely because is the JVM, at runtime, that controls everything.
+
+### Initializing *final* Fields
+
+Fields marked `final` must be assigned values when they are declared or in an instance 
+initializer.
+```
+public class MouseHouse {
+  private final int volume;
+  private final String name = "The Mouse House";    // declaration assignment
+  {
+    volume = 10;    // instance initializer assignment
+  }
+}
+```
+
+Unlike static class members, final instance fields can also be set in the constructor, 
+since the constructor is part of the initialization process. So, this is also valid:
+```
+public class MouseHouse {
+  private final int volume;
+  private final String name;
+  public MouseHouse() {
+    this.name = "Empty House";    // constructor assignment
+  }
+  {
+    volume = 10;    // instance initializer assignment
+  }
+}
+```
+
+Instance variables marked as final **must be assigned a value** during the object 
+initialization, by:
+ - assigning a value when they are declared
+ - assigning a value in an instance initializer, or
+ - assigning a values in the constructor
+ 
+ If not assigned, they will cause a compiler error.
+
+
+### Initializing Instances
+ 
+The initialization starts with the lowest-level constructor where the `new` keyword is 
+used. Remembering that **the first line of every constructor is a call to `this()` or `super()`** 
+and if omitted, the compiler will automatically insert a call to the parent no
+-argument constructor `super()`. Then, the initialization progress upward following 
+the order of the constructors. Finally, starting with the superclass, each class is 
+initialized, processing each instance initializer and constructor in the reverse order 
+in which it was called.
+ 
+This is the summary of the order of initialization for an instance of X class:
+ 1. initialize class X if it has not been previously initialized.
+ 2. if there is a superclass Y of X, then initialize the instance of Y first.
+ 3. process all instance variables declarations in the order in which they appear
+ 4. process all instance initializers in the order in which they appear
+ 5. initialize the constructor, including any overloaded constructors referenced with `this()`
+
+An example with no inheritance. What is the output?
+```
+01: public class ZooTickets {
+02:   private String name = "BestZoo";
+03:   { System.out.print(name + "-"); }
+04:   private static int COUNT = 0;
+05:   static { System.out.print(COUNT + "-"); }
+06:   static { COUNT += 10; System.out.print(COUNT + "-"); }
+07:
+08:   public ZooTickets() {
+09:     System.out.print("z-");
+10:   }
+11:
+12:   public static void main(String... patrons) {
+13:     new ZooTickets();
+14:   }
+15: }
+```
+The output is this: `0-10-BestZoo-z-`
+
+Fist, we hat to initialize the class. Since there is no superclass declared, `Object` 
+becomes the superclass, and we start with the static components of `ZooTickets`. In 
+this case, lines 4, 5, and 6 are executed, printing '0-' and '10-'. Next, we 
+initialize the instance created on line 13, again, since no superclass is declared, we 
+start with the instance components. Then, lines 2 and 3 are executed, which prints 
+'BestZoo-'. Finally, we run the constructor, on lines 8-10, which outputs 'z-'.
+
+Another example, now with inheritance.
+```
+class Primate {
+  public Primate() {
+    System.out.print("Primate-");
+  }
+}
+---
+class Ape extends Primate {
+  public Ape(int fur) {
+    System.out.print("Ape1-");
+  }
+  public Ape() {
+    System.out.print("Ape2-");
+  }
+}
+---
+public class Chimpanzee extends Ape {
+  public Chimpanzee() {
+    super(2);
+    System.out.print("Chimpanzee-");
+  }
+  public static void main(String[] args) {
+    new Chimpanzee();
+  }
+}
+```
+The compiler inserts the `super()` command as the first statement of both `Primate` 
+and `Ape` constructors. The code will execute with the parent constructors called 
+first and yield the following output:
+
+Primate-Ape1-Chimpanzee-
+
+Notice that only one of the two `Ape` constructors is called. We start with the call 
+to `new Chimpanzee()` to determine which constructors will be executed. Constructors 
+are executed from the bottom up, but since the first line of every constructor is a 
+call tho another constructor, the flows ends up with the parent constructor executed 
+before the child constructor.
+
+A much harder:
+```
+01: public class Cuttlefish {
+02:   private String name = "swimmy";
+03:   { System.out.println(name); }
+04:   private static int COUNT = 0;
+05:   static { System.out.println(COUNT); }
+06:   { COUNT++; System.out.println(COUNT); }
+07:
+08:   public Cuttlefish() {
+09:     System.out.println("Constructor");
+10:   }
+11:
+12:   public static void main(String[] args) {
+13:     System.out.println("Ready");
+14:     new Cuttlefish();
+15:   }
+16: }
+```
+The output is this:
+```
+0
+Ready
+swimmy
+1
+Constructor
+```
+No superclass is declared, so we can skip any steps that relate to inheritance. We 
+first process the static variables and static initializers -- lines 4 and 5, with line 
+5 printing '0'. Now that the static initializers are out of the way, the `main()` 
+method can run, which prints 'Ready'. Next we create an instance declared on line 14. 
+Lines 2, 3, and 6 are processed, with line 3 printing 'swimmy' and line 6 printing 
+'1'. Finally, the constructor is run on lines 8 - 10, which prints 'Constructor'.
+
+A more difficult one. What does the following output?
+```
+01: class GiraffeFamily {
+02:   static { System.out.print("A"); }
+03:   { System.out.print("B"); }
+04: 
+05:   public GiraffeFamily(String name) {
+06:     this(1);
+07:     System.out.print("C");
+08:   }
+09:
+10:   public GiraffeFamily() {
+11:     System.out.print("D");
+12:   }
+13:
+14:   public GiraffeFamily(int stripes) {
+15:     System.out.print("E");
+16:   }
+17: }
+18: public class Okapi extends GiraffeFamily {
+19:   static { System.out.print("F"); }
+20:
+21:   public Okapi(int stripes) {
+22:     super("sugar");
+23:     System.out.print("G");
+24:   }
+25:   { System.out.print("H"); }
+26:
+27:   public static void main(String[] grass) {
+28:     System.out.println("J");
+29:     new Okapi(1);
+30:     System.out.println();
+31:     new Okapi(2);
+32:  }
+33: }
+```
+This are the rules of initialization:
+- class initialization: static initializers, first super-classes than classes
+- after classes initialization, the `main()` is executed
+- super-class instance initialization: first variables, than blocks, finally constructors
+- class instance initialization: blocks, than constructors
+
+The program prints the following:
+AFJBECHG
+BECHG
+
+## Inheriting Members
+
+Inheriting a class not only grants access to inherited methods in the parent class but 
+also sets the stage for collisions between methods defined in both, the parent class 
+and the subclass.
+
+### Overriding a Method
+
+In Java, *overriding* a method occurs when a subclass declares a new implementation 
+for a inherited method with the same signature and compatible return type. The parent 
+version of the overrode method still accessible via `super` keyword or, if is a 
+`static` method, via class name. We do this when we want to define a new version of a 
+method and have it behave differently for the subclass.
+
+To override a method we need follow this rules:
+1. the method in the child class must have the same signature
+2. the method in the child class must be at least as accessible at the method in the parent class
+3. the method in the child class may not declare a checked exception that is new or broader than the class of any exception declared in the parent class method
+4. if the method returns a value, it must be the same or a sub-type of the method of 
+the parent class, known as *covariant return types*.
+
+**Since we want to take the benefits of overriding, we must follows this rules**, or 
+the code will not compile.
+
+### Making Methods with the @Override Annotation
+
+An annotation is a metadata tag that provides additional information about our code. 
+We can user the *@Override* annotation to tell the compiler that we are attempting to 
+override a method.
+This annotation can prevent us from making a mistake, because it prevents the code to 
+compile when they could, but is not our intention.
+```
+public class Fish {
+  public void swim() {};
+}
+---
+public class Shark extends Fish {
+  @Override
+  public void swim(int speed) {};    // does not compile
+}
+```
+Without the annotation, we will create an overloaded method instead of an overrode, 
+which is not our intention.
+
+### Re-declaring *private* Methods
+
+Java permits us to re-declare a new method in the child class with the same name or 
+modified signature as the private method in the parent class. The method in the child 
+class is a separate and independent method, unrelated to the parent version's method, 
+so none of the rules for overriding methods is invoked.
+```
+public class Beetle {
+  private String getSize() {
+    return "Undefined";
+  }
+}
+---
+public class RhinocerosBeetle extends Beetle {
+  private int getSize() {
+    return 5;
+  }
+}
+```
+In this example, the method `getSize()` in the parent class is re-declared, so the 
+method in the child class is a new method and not an override of the method in the 
+parent class. If the method in the `Beetle` class was declared `public`, the rules of 
+overriding will be applied and the code will not compile.
+
+### Hiding Static Methods
+
+A *hidden method* occurs when a child class defines a static methods with the same 
+name and signature as an inherited static methods defined in a parent class. Method 
+hiding is similar to but not exactly the same as method overriding. When this occur, a 
+new *fifth* rule is added for hiding a method:
+
+- The method defined in the child class must be marked as `static` if it is marked as `static` in a parent class.
+
+So, if the two methods are marked `static`is method hiding and is overriding if they 
+have other **equal access modifier**. Otherwise, the code will no compile.
 
