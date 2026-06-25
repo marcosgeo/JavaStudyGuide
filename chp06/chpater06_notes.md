@@ -441,7 +441,9 @@ Taking a look at an example, what does the following program print?
 public class Animal {
   static {System.out.print("A);}
 }
+
 ---
+
 public class Hippo extends Animal {
   String color = "brown";
   public static void main(String[] args) {
@@ -562,7 +564,9 @@ class Primate {
     System.out.print("Primate-");
   }
 }
+
 ---
+
 class Ape extends Primate {
   public Ape(int fur) {
     System.out.print("Ape1-");
@@ -571,7 +575,9 @@ class Ape extends Primate {
     System.out.print("Ape2-");
   }
 }
+
 ---
+
 public class Chimpanzee extends Ape {
   public Chimpanzee() {
     super(2);
@@ -674,6 +680,7 @@ The program prints the following:
 AFJBECHG
 BECHG
 
+
 ## Inheriting Members
 
 Inheriting a class not only grants access to inherited methods in the parent class but 
@@ -753,4 +760,210 @@ new *fifth* rule is added for hiding a method:
 
 So, if the two methods are marked `static`is method hiding and is overriding if they 
 have other **equal access modifier**. Otherwise, the code will no compile.
+
+
+### Hiding Variables
+
+A *hidden variable* occurs when a child class defines a variable with the same name as 
+an inherited variable defined in the parent class. This create two distinct copies of 
+the variable  within an instance of the child class: one instance defined in the 
+parent class and on defined in the child class.
+```
+class Carnivore {
+  protected boolean hasFur = false;
+}
+
+---
+
+public class Meerkat extends Carnivore {
+  protected boolean hasFur = true;
+  
+  public static void main(String[] args) {
+    Meerkat m = new Meerkat();
+    Carnivore c = m;
+    System.out.print(m.hasFur);    // true
+    System.out.print(c.hasFur);    // false
+  }
+}
+```
+Even though only one object is created by the `main()` method, both variables exist 
+independently of each other. The output changes depending on the reference variable 
+used.
+
+
+### Writing *final* Methods
+
+By marking a method `final`, we forbid a child class from replacing this method. This 
+rule is in place both when we override a method and when we hide a method. That is: a 
+method cannot hide a `static` method in a child class if it is marked `final` in the 
+parent class.
+```
+public class Bird {
+  public final boolean hasFeathers() {
+    return true;
+  }
+  public final static void flyAway() {}
+}
+
+---
+
+public class Penguin extends Bird {
+  public final boolean hasFeathers() {    // does not compile
+    return false;
+  }
+  public final static void flyAway() {}    // does not compile
+}
+```
+In this example, whether or not the child method use the `final` keyword is 
+irrelevant, the code will not compile either way.
+
+This rule applies only to inherited methods, it the two methods were marked `private` 
+in the `Bird` class, the the `Penguin` class, as defined, would compile. In this case, 
+the `private` method would be *redeclared*, not overridden or hidden.
+
+
+## Creating Abstract Classes
+
+When designing a model, sometimes we want to create an entity that cannot be 
+instantiated directly. For example, we could have a class `Canine` the the subclasses 
+`Wolf`, `Fox`, and `Coyote`. We want that other developers to be able to create 
+instances of the subclasses, but perhaps we don't want them to be able to create a 
+`Canine` instance. In other words, we want to force all objects of `Canine` to have a 
+particular type at runtime.
+
+### Introducing Abstract Classes
+
+An *abstract class* is a class declared with the `abstract` modifier that cannot be 
+instantiated directly and may contain abstract methods. An example based on the 
+`Canine` data model.
+```
+public abstract class Caninie {}
+---
+public class Wolf extends Canine {}
+---
+public class Fox extends Canine {}
+---
+public class Coyote extends Canine {}
+```
+In this example, other developer can create instance of `Wolf`, `Fox` and `Coyote`, 
+but not `Canine`. It is possible pass a variable reference as a `Canine`, but the 
+underlying object must be a subclass of `Canine` at runtime.
+
+An abstract class can contain abstract methods. An *abstract method* is a method 
+declared with the `abstract` modifier that does not define a body. An abstract method 
+forces subclasses to override the method.
+
+By declaring a method abstract, we can guarantee that some version will be available 
+on an instance without having to specify what that version is in the abstract parent 
+class. This is what allow *polymorphism*.
+```
+public abstract class Caninie {
+  public abstract String getSound();
+  public void bark() {
+    System.out.println(getSound());
+  }
+}
+---
+public class Wolf extends Canine {
+  public String getSound() {
+    return "Wooooof!"
+  }
+}
+---
+public class Fox extends Canine {
+  public String getSound() {
+    return "Squeak!";
+  }
+}
+---
+public class Coyote exetends Canine {
+  public String getSound() {
+    return "Roar!";
+  }
+}
+```
+
+We can then create an instance of `Fox` and assign it to the parent type `Canine`. The 
+overridden method will be used at runtime.
+```
+public static main(String[] p) {
+  Canine w = new Fox();
+  w.bark();    // Squeak!
+}
+```
+
+There are some rules to polymorphism:
+ - only instance methods can be marked abstract within a class
+ - an abstract method can only be declared in an abstract class
+ - a nos-abstract class that extends an abstract class must implements all abstract methods
+ - overriding an abstract method follows the existing rules for overriding methods
+
+An abstract class is most commonly used when we want another class to inherit 
+properties of a particular class, but we want the subclass to fill in some of the 
+implementation details.
+
+Abstract classes are initialized only as part of the instantiation of a non-abstract class.
+
+### Declaring Abstract Methods
+
+An abstract class can include all of the same members as a non-abstract class, 
+including variables, static and instance methods, constructors, etc. In fact, is 
+*not required to an abstract class to include any abstract methods*. The following 
+class compile:
+```
+public abstract class Llama {
+  public void chew() {}
+}
+```
+
+Abstract methods can't be declared outside an abstract class and the modifier 
+`abstract` can be placed before or after the access modifier in the class and method 
+declaration:
+```
+abstract public class Tiger {
+  abstract public int claw();
+}
+```
+
+The `abstract` modifier cannot be places after the `class` keyword in a class 
+declaration or after the return type in a method declaration.
+```
+public class abstract Bear {    // does not compile
+  public int abstract howl();    // does not compile
+}
+```
+
+The standard way is this:
+```
+public abstract class Cat {
+  public abstract String getSound();
+}
+```
+Abstract methods doesn't have a body and ends with a `;`. So, there is no *default* 
+implementation for abstract methods.
+
+### Creating a Concrete Class
+
+An abstract class becomes usable when it is extended by a concrete subclass. A 
+*concrete class* is a non-abstract class that extends an abstract class and implement 
+all inherited abstract methods. This included implementing any inherited abstract 
+methods from inherited interfaces (next chapter).
+```
+public abstract class Animal {
+  public abstract String getName();
+}
+---
+public class Walrus extends Animal {
+  System.out.print("I have no name");
+}    // does not compile
+```
+
+Since `Animal` is marked `abstract` and `Walru` is not, making `Walrus` a concrete 
+subclass of `Animal`. As the *fist class to implement an abstract class*, `Walrus` 
+must implement all inherited abstract methods of the inherited class.
+
+
+
+
+
 
