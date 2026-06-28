@@ -6,9 +6,9 @@ Objectives:
   - understand variable scopes, use local variable type inference, apply encapsulation, and make objects immutable.
   - implement polymorphism and differentiate object type versus reference. Perform type casting, identify object types using `instanceof` operator and pattern matching.
   
-This chapter is the culmination of some of the most important topics in Java including 
-inheritance, class design, constructors, order of initialization, overriding methods, 
-abstract classes, and immutable objects.
+This chapter is the culmination of some of the most important topics in Java 
+including inheritance, class design, constructors, order of initialization, 
+overriding methods, abstract classes, and immutable objects.
 
 ## Understanding Inheritance
 
@@ -44,10 +44,10 @@ public class Spider {
 ```
 `Jaguar` is a *subclass* or *child* of `BigCat`, making `BigCat` a *superclass* or 
 *parent* of `Jaguar`. The only condition to be a *superclass* it not to be declared 
-*final*. In the `Jaguar` class, `size`is accessible because it is marked `protected` on 
-the *superclass*. Via inheritance, the `Jaguar` subclass can read and write `size` as 
-if it were its own member. Contrast this with the `Spider` class, which has no access 
-to `size` since it is not inherited.
+*final*. In the `Jaguar` class, `size`is accessible because it is marked `protected` 
+on the *superclass*. Via inheritance, the `Jaguar` subclass can read and write `size` 
+as if it were its own member. Contrast this with the `Spider` class, which has no 
+access to `size` since it is not inherited.
 
 ### Class Modifiers
 
@@ -82,28 +82,28 @@ public class Clara extends Rhinoceros {}    // does not compile
 ### Single vs Multiple Inheritance
 
 Java supports *single inheritance*, by which a class may inherit from **only one 
-direct parent class**. Java also supports multiple levels of inheritance, by which one 
-class may extend another class, which in turn extends another class.
+direct parent class**. Java also supports multiple levels of inheritance, by which 
+one class may extend another class, which in turn extends another class.
 
 Part of what makes multiple inheritance complicated is determining which parent to 
-inherit values from in case of a conflict. For example, if we have an object or method 
-defined in all of the parents, which one does the child inherit?
+inherit values from in case of a conflict. For example, if we have an object or 
+method defined in all of the parents, which one does the child inherit?
 
 ### Inheriting Object
 
 In Java, all classes inherit from a single class: `java.lang.Object`, or `Object` for 
 short. Furthermore, `Object` is the only class that doesn't have a parent class. When 
-compiling, the compiler automatically insert code into any class we write that doesn't 
-extend a specific class. For example, the following two are equivalent:
+compiling, the compiler automatically insert code into any class we write that 
+doesn't extend a specific class. For example, the following two are equivalent:
 ```
 public class Zoo {}
 ---
 public class Zoo extends java.lang.Object {}
 ```
 The result is that every class gains access to any accessible methods in the `Object` 
-class. For example, the `toString()` and `equals()` methods are available in `Object`; 
-therefore, they are accessible in all classes. Without being overridden in a subclass, 
-though, they may not bee particularly useful.
+class. For example, the `toString()` and `equals()` methods are available in 
+`Object`; therefore, they are accessible in all classes. Without being overridden in 
+a subclass, though, they may not bee particularly useful.
 ```
 java.lang.Object  <-- ...  <-- Mammal <-- Cat <-- Oxx  
 ```
@@ -181,21 +181,21 @@ It should be `public` or with no access modifier declared (package access).
 
 ### Accessing the *this* Reference
 
-Inside a class method, when we have a local variable with the same name as an instance 
-member, we use the `this` keyword in order to access the class member and avoid 
-conflict. The `this` reference refers to the current instance of the class and can be 
-used to access any member of the class, including inherited members. It can be used in 
-any instance method, constructor, or instance initializer block. It cannot be used 
-when there is no implicit instance of the class, such as in a static method or static 
-initializer block.
+Inside a class method, when we have a local variable with the same name as an 
+instance member, we use the `this` keyword in order to access the class member and 
+avoid conflict. The `this` reference refers to the current instance of the class and 
+can be used to access any member of the class, including inherited members. It can be 
+used in any instance method, constructor, or instance initializer block. It cannot be 
+used when there is no implicit instance of the class, such as in a static method or 
+static initializer block.
 
 ### Calling the *super* Reference
 
-In Java, a variable or method cab be defined in both a parent class and a child class. 
-This means the object instance actually holds two copies of the same variable with the 
-same underlying name. When this happens, we could use the `super` reference or 
-keyword. With the `super` reference, we access member defined in the superclass, the 
-first that is found.
+In Java, a variable or method cab be defined in both a parent class and a child 
+class. This means the object instance actually holds two copies of the same variable 
+with the same underlying name. When this happens, we could use the `super` reference 
+or keyword. With the `super` reference, we access member defined in the superclass, 
+the first that is found.
 ```
 // Reptile.java
 public class Reptile {
@@ -300,8 +300,8 @@ constructor, it not allow other classes to call it.
 
 ### Calling Overloaded Constructors with *this()*
 
-Since a class can contain multiple overloaded constructors, this constructors can call 
-one another. 
+Since a class can contain multiple overloaded constructors, this constructors can 
+call one another. 
 ```
 public class Hamster {
   private String color;
@@ -319,10 +319,10 @@ public class Hamster {
 This class compile, although there is a bit of duplication, as `this.weight` is 
 assigned the same way in both constructors. Note that calling 
 `Hamster(weight, "brown")` in the second constructor will not work since we need to 
-use the keyword `new` to a constructor be called. Using `new Hamster(weight, "brown")` 
-creates a second object.
-When `this()` is used in this way, with parenthesis, Java calls another 
-constructor in the same instance of the class, so the second constructor should be.
+use the keyword `new` to a constructor be called. 
+Using `new Hamster(weight, "brown")` creates a second object. When `this()` is used 
+in this way, with parenthesis, Java calls another constructor in the same instance of 
+the class, so the second constructor should be.
 ```
 public class Hamster {
   ...
@@ -472,8 +472,9 @@ public class HippoFriend {
 }
 ```
 Assuming the `Hippo` class isn't reference anywhere else, this program will *likely* 
-print "CAB", with the `Hippo` class **not being loaded until it is needed** inside the 
-`main()` method. It is likely because is the JVM, at runtime, that controls everything.
+print "CAB", with the `Hippo` class **not being loaded until it is needed** inside 
+the `main()` method. It is likely because is the JVM, at runtime, that controls 
+everything.
 
 ### Initializing *final* Fields
 
@@ -489,8 +490,9 @@ public class MouseHouse {
 }
 ```
 
-Unlike static class members, final instance fields can also be set in the constructor, 
-since the constructor is part of the initialization process. So, this is also valid:
+Unlike static class members, final instance fields can also be set in the 
+constructor, since the constructor is part of the initialization process. So, this is 
+also valid:
 ```
 public class MouseHouse {
   private final int volume;
@@ -515,14 +517,14 @@ initialization, by:
 
 ### Initializing Instances
  
-The initialization starts with the lowest-level constructor where the `new` keyword is 
-used. Remembering that **the first line of every constructor is a call to `this()` or `super()`** 
+The initialization starts with the lowest-level constructor where the `new` keyword 
+is used. Remembering that **the first line of every constructor is a call to `this()` or `super()`** 
 and if omitted, the compiler will automatically insert a call to the parent no
 -argument constructor `super()`. Then, the initialization progress upward following 
 the order of the constructors. Finally, starting with the superclass, each class is 
-initialized, processing each instance initializer and constructor in the reverse order 
-in which it was called.
- 
+initialized, processing each instance initializer and constructor in the reverse 
+order in which it was called.
+
 This is the summary of the order of initialization for an instance of X class:
  1. initialize class X if it has not been previously initialized.
  2. if there is a superclass Y of X, then initialize the instance of Y first.
@@ -958,12 +960,222 @@ public class Walrus extends Animal {
 }    // does not compile
 ```
 
-Since `Animal` is marked `abstract` and `Walru` is not, making `Walrus` a concrete 
-subclass of `Animal`. As the *fist class to implement an abstract class*, `Walrus` 
-must implement all inherited abstract methods of the inherited class.
+Since `Animal` is marked `abstract` and `Walrus` is not, this makes `Walrus` a 
+concrete subclass of `Animal`. As the *fist class to implement an abstract class*, 
+`Walrus` must implement all inherited abstract methods of the inherited class.
+
+An abstract class can extend a non-abstract class and vice-versa. Anytime a concrete 
+class is extending an abstract class, it must implement all of the methods that are 
+inherited as abstract.
+```
+public abstract class Mammal {
+  abstract void showHorn();
+  abstract void eatLeaf();
+}
+---
+public abstrac class Rhino extends Mammal {
+  void showHorn() {}    // inherited from Mammal
+}
+---
+public class BlackRhino extends Rhino {
+  void eatLeaf() {}    // inherited from Mammal
+}
+```
+Here `BlackRhino` is the first concrete class, while `Mammal` and `Rhino` are 
+abstract. The `BlackRhino` inherits the `eatLeaf()` method as abstract, so it need to
+provide an implementation. Since `showHorn()` has an implementation in `Rhino`, 
+`BlackRhino` inherits as it is and don't need to provide an implementation. If we 
+want, *we could override* the method `showHorn()` in `BlackRhino`, providing an 
+implementation to it.
+
+### Creating Constructors in Abstract Classes
+
+Even though abstract classes cannot be instantiated, they are still initialized 
+through constructors by their subclasses. Consider this program:
+```
+abstrac class Mammal {
+  abstract CharSequence chew();
+  public Mammal() {
+    System.out.println(chew());    // this line compile?
+  }
+}
+---
+public class Platypus extends Mammal {
+  String chew() { return "yummy!"; }
+  public static void main(String[] args) {
+    new Platypus();
+  }
+}
+```
+The primary difference between a constructor in an abstract class and a non-abstract 
+class is that a constructor in an abstract class can be called only when it is been 
+initialized by a non-abstract subclass.
+
+Since the compiler will insert a default constructor in `Playpus`, which first calls 
+`super()` calling the constructor of the parent class. The `Mammal` constructor is 
+only called when the abstract class is been initialized through a subclass; 
+therefore, there is an implementation of `chew()` at the time the constructor is 
+called and the code above compiles.
+
+### *abstract* and *final* Modifiers
+
+When we mark something as `abstract` we intend for someone else to extend or 
+implement it. But if we mark something as `final` we are preventing anyone to extend 
+or implement it. So, this two modifier cannot be used together in the method 
+declaration.
 
 
+### *abstract* and *private* Modifiers
 
+A method cannot be marked as both `abstract` and `private`. If a subclass need 
+implements a method, this method cannot be private, since private methods are not 
+inherited by the subclasses.
+
+### *abstract* and *static* Modifiers
+
+A `static` method can only be *hidden*, not overridden. It is defined as belonging to 
+the class, not an instance of the class. Since it cannot be overridden, it also 
+cannot be marked `abstract` because it can never be implemented.
+
+
+## Creating Immutable Objects
+
+The *immutable objects pattern* isn an object-oriented design pattern in which an 
+object cannot be modified after it is created. Immutable objects are helpful when 
+writing secure code because we don't have to worry about the values changing. They 
+also simplify code when dealing with concurrency since immutable objects can be 
+easily shared between multiple threads.
+
+### Declaring an Immutable Class
+
+There are a variety of techniques for writing an immutable class, and we should be 
+familiar with a common strategy for making a class immutable:
+
+1. mark the class as final or make all of the constructors private.
+2. mark all the instance variables private and final.
+3. don't define any setter methods.
+4. don't allow referenced mutable objects to be modified.
+5. use a constructor to set all properties of the object, making a copy if needed
+
+The first rule prevents anyone from creating a mutable subclass. The second and third 
+rules ensure that callers don't make changes to instance variables and are hallmarks 
+of good encapsulation.
+The fourth rule means we should not expose an accessor (or getter) method for mutable 
+instance fields. Why the following creates a mutable object?
+```
+import java.util.*;
+public final class Animal {
+  private final ArrayList<String> favorireFoods;
+  
+  public Animal() {
+    this.favoriteFoods = new ArrayList<String>();
+    this.favoriteFoods.add("Apples");
+  }
+  
+  public List<String> getFavoriteFoods() {
+    return favoriteFoods;
+  }
+}    // not an immutable object declaration
+```
+Here, the first three rules are followed, but a malicious caller could still modify 
+our data:
+```
+var zebra = new Animal();
+System.out.println(zebra.getFavoriteFoods());    // [Apples]
+
+zebra.getFavoriteFoods().clear();
+zebra.getFavoriteFoods().add("Chocolate Chip Cookies");
+System.out.println(zebra.getFavoriteFoods());    // [Chocolate Chip Cookies]
+```
+It is not an immutable object if we can change its contents! Returning the 
+`favoriteFoods` array allow its contents to be modified. But, if we don't have a 
+getter for the `favoriteFoods` object, how do callers access it? Simple: by using 
+*delegate* or *wrapper* methods to read the data. An improved version:
+```
+import java.util.*;
+public fianl class Animal {    
+  private final List<String> favoriteFoods;
+  
+  public Animal() {
+    this.favoriteFoods = new ArrayList<String> ();
+    this.favoriteFoods.add("Apples");
+  }
+  
+  public int getFavoriteFoodsCount() {
+    return favoriteFoods.size();
+  }
+  
+  public String getFavoriteFoodsItem(int index) {
+    return favoriteFoods.get(index);
+  }
+}    // an immutable object declaration
+```
+In this version the data is still available, however, it is a true immutable object 
+because the mutable variable cannot be modified by the caller.
+
+Another approach is to make a copy of the mutable object any time it is requested:
+```
+public ArrayList<String> getFavoriteFoods() {
+  return new ArrayList<String>(this.favoriteFoods);
+}
+```
+Since changing a copy won't be reflected in the original, this is fine, but it came 
+with a price: it can be an expensive operation if called frequently by the caller.
+
+Finally, let's go to **the fifth** rule for creating immutable objects. Suppose we
+want that the data for `favoriteFoods` is provided by the caller and that it always 
+contains at least one element. This rule is often called an invariant; it is true any 
+time we have an instance of the object.
+```
+import java.util.*;
+public final class Animal {
+  private final ArrayList<String> favoriteFoods;
+  
+  public Animal(ArrayList<String> favoriteFoods) {
+    if (favoriteFoods == null || favoriteFoods.size() == 0) {
+      throw new RuntimeException("favoriteFoods is required");
+    }
+    this.favoriteFoods = favoriteFoods;
+  }
+  
+  public int getFavoriteFoodsCount() {
+    return favoriteFoods.size();
+  }
+  
+  public String getFavoriteFoodsItem(ind index) {
+    return favoriteFoods.get(index);
+  }
+}    // not an immutable object declaration
+```
+To ensure that `favoriteFoods` is provided, we validate it in the constructor and 
+throw an exception if if is not provided. Is this immutable?
+
+A malicious caller might be tricky and keep their own secret reference to or 
+`favoriteFoods` object, which they can modify directly.
+```
+var favorites = new ArrayList<String>();
+favorites.add("Apples");
+
+var zebra = nrew Animal(fovorites);    // caller still has access to favorites
+System.out.println(zebra.getFavoriteFoodsItem(0));    // Apples
+
+favorites.clear();
+favorites.add("Chocolate Chip Cookies");
+System.out.println(zebra.getFavoriteFoodsItem(0));    // Chocolate Chip Cookies
+```
+It seems that `Animal` is not immutable anymore, since its contents can change after 
+it is created. The solution is, in the constructor, to make a copy of the list object 
+containing the same elements:
+```
+...
+public Animal(List<String> favoriteFoods) {
+  ...
+  this.favoriteFoods = new ArrayList<String>(favoriteFoods);
+}
+```
+The copy operation is called a *defensive copy* because the copy is being made in 
+case other code does something unexpected. With this approach, the `Animal` class is 
+once again immutable.
 
 
 
