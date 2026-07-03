@@ -761,8 +761,8 @@ public class Panda {
 }
 ```
 The `name` variable is assigned a value when it is declared, while the `bamboo` 
-variable is assigned a value in a **static initializer**. The `height` variable is not 
-assigned a value anywhere in the class definition, so that line does not compile.
+variable is assigned a value in a **static initializer**. The `height` variable is 
+not assigned a value anywhere in the class definition, so that line does not compile.
 
 
 In chapter 1, **instance initializers** were covered, they looked like unnamed 
