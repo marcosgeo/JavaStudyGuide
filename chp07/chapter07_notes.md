@@ -384,3 +384,220 @@ public class Bunny implements Hop {
 
 ### Reusing Code with *private* Interface Methods
 
+The last two type of concrete methods that can be added to interfaces are *private* and 
+*private static* interface methods. Because both types of methods are private, the can 
+only be used in the interface declaration in which the are declared. For this reason, 
+**they were added primarily to reduce code duplication**. Consider this example:
+```
+public interface Schedule {
+  default void wakeUp() { checkTime(7); }
+  private void haveBreakfast() { checkTime(9); }
+  static void workOut() { checkTime(18); }
+  private static void chackTime(int hour) {
+    int currentTime = 17;   // just for clarity
+    if (hour > currentTime) {
+      System.out.println("You're late!");
+    } else {
+      System.out.println("You're late" + (currentTime - hour) + " hours left "
+          + "to make the appointment");
+    }
+  }
+}
+```
+We could write this interface without using a private method by copying the contents of 
+`checkTime()` method into the places it is used. It's a lot shorter and easier to read 
+if we copy.
+We could have also declared `checkTime()` as public, but this would expose the method 
+to use outside the interface. One important principle of encapsulation is to not expose 
+the internal workings of a class or interface when not is required.
+
+The difference between a *non-static private method* and a *static private method* is 
+analogous to the difference between an instance and static method declared within a 
+class. In particular, it's all about what methods each can be called from.
+
+**Private Interface Method Definition Rules**
+1. a private interface method must be marked with the `private` modifier and include a body
+2. a private static interface method may be called by any method within the interface definition
+3. a private interface method may only be called by default and other private non-static methods 
+   within the interface definition
+
+Another way to think of it is that a *private interface method* is only accessible to 
+no-static methods defined within the interface. A *private static interface method*, on 
+the other hand, can be accessed by any method in the interface. For both types of 
+private methods, **a class inheriting the interface cannot directly invoke them**.
+
+## Calling Abstract Methods
+
+The primary reason that *default* and *private non-static*, declared in the interface, 
+are associated with an instance membership, is that this methods can be accessed by 
+*abstract methods* declared in the interface. When the are invoke, there is an instance 
+of the interface.
+```
+public interface ZooRenovation {
+  public String projectName();
+  abstrac String status();
+  default void printStatus() {
+    System.out.print("The" + projectName() + " project " + status());
+  }
+}
+```
+In this example, both `projectName()` and `status()`have the same modifiers (*abstract* 
+and *public* are implicit) and can be called by the *default* method `printStatus()`.
+
+### Reviewing Interface Members
+
+**Table 7.2 Interface member access rules**
+
+    +-------------------------------------+-----------------+--------------------+--------------------+
+    |                   | Accessible from | Accessible from | Accessible from    | Accessible without |
+    |                   | default and     | static methods  | methods in classes | an instance of     |
+    |                   | private methods | within the      | inheriting the     | the interface?     |
+    |                   | within the      | interface?      | interface?         |                    |
+    |                   | interface?      |                 |                    |                    |
+    --------------------+-----------------+-----------------+--------------------+--------------------+
+    | Constant variable |  Yes            |  Yes            |  Yes               |      Yes           |
+    +-------------------+-----------------+-----------------+--------------------+--------------------+
+    | abstract method   |  Yes            |  No             |  Yes               |  No                |
+    +-------------------+-----------------+-----------------+--------------------+--------------------+
+    | default method    |  Yes            |  No             |  Yes               |  No                |
+    +-------------------+-----------------+-----------------+--------------------+--------------------+
+    | static method     |  Yes            |  Yes            |  Yes (i.Face.req)  |  Yes (i.Face.req)  |
+    +-------------------+-----------------+-----------------+--------------------+--------------------+
+    | private method    |  Yes            |  No             |  No                |  No                |
+    +-------------------+-----------------+-----------------+--------------------+--------------------+
+    | private static    |  Yes            |  Yes            |  No                |  No                |
+    | method            |                 |                 |                    |                    |
+    +-------------------+-----------------+-----------------+--------------------+--------------------+
+
+This rules can results in this:
+- *abstract*, *default*, and *non-static private* methods belongs to an instance of the interface.
+- *static methods* and *static variables* belongs to the interface class object.
+- all private interface method types are only accessible within the interface declaration.
+
+Using these rules, which methods below do not compile?
+```
+public interface ZooTrainTour {
+  abstract int getTrainName();
+  private static void ride() {}
+  default void playHorn() { getTrainName(); ride(); }
+  public static void slowDown() { playHorn(); }
+  static void speedUp() { ride(); }
+}
+```
+The `ride()` method is private and static, so it can be accessed by any default or 
+static method within the interface declaration. The `getTrainName()` is abstract, so it 
+can be accessed by a default method associated with the instance. The `slowDown()` 
+method is static, though, and cannot call a default or private method, such as 
+`playHorn()`, without an explicit reference object. Therefore, the `slowDown()` method 
+does not compile.
+
+
+## Working with Enums
+
+It is common to have a type that can only have a finite set of values, such as days of 
+week, season of the year, primary colors, and so on. An *enumeration*, or *enum*, is 
+like a fixed set of constants.
+
+### Creating Simple Enums
+
+To create an enum, we declare a type with the `enum` keyword, a name and a list of 
+values, like shown below:
+```
+public enum Season {
+  WINTER, SPRING, SUMMER, FALL;
+}
+```
+We refer to an enum that only contains a list of values as a *simple enum*. When 
+working with simple enums, the semicolon at the end of the list is optional. Enum 
+values are considered constants and are commonly written using snake case, e.g.: 
+ROCK_ROAD, MINT_CHOCOLATE_CHIP.
+```
+var s Season.SUMMER;
+System.out.println(Season.SUMMER);    // SUMMER
+System.out.println(s == Season.SUMMER);    // true
+```
+As we can see, enum print the name of the enum when `toString()` is called. They can 
+be compared using `==` because the are like static final constants, so we cane use 
+`equals()` or `==` to compare enums, since each enum value is initialized only once in 
+the JVM.
+
+
+**Calling the _values()_, _name()_, and _ordinal()_ Methods**
+
+An enum provides a `values()` method to get an array of all of the values. We can use 
+this like any normal array, including in a for-each loop:
+```
+for (var season : Season.values()) {
+  System.out.println(season.name() + " " + season.ordinal());
+}
+---
+WINTER 0
+SPRING 1
+SUMMER 2
+FALL 3
+```
+As we can see, each enum value has a corresponding `int` value and the values are listed 
+in the order in which they are declared.
+
+**Calling the _valueOf()_ Method**
+
+The `valueOf()` retrieves an enum value from a `String`.
+```
+Season s = Season.valueOf("SUMMER");    // SUMMER
+Seaton t = Season.valueOf("summer");    // IllegalArgumentException
+```
+The first statement works and assigns the proper enum value to `s`. Note that this line 
+is not creating an enum value. Each enum value is created once when the enum is first 
+loaded. Once the enum has been loaded, it retrieves the single enum value with the 
+matching name.
+Since there is no enum value with the lowercase name "summer", Java throws up its hands 
+in defeat an throws an `IllegalArgumentException`.
+
+### Using Enums in _switch_ Statements
+
+Enums can be used in `switch` statements and expressions:
+```
+Season summer = Season.SUMMER;
+switch(summer) {
+  case WINTER:
+    System.out.print("Get out the sled!");
+    break;
+  case SUMMER:
+    System.out.print("Time for the pool");
+    break;
+  default:
+    System.out.print("It is summer yet?");
+}
+```
+The code prints "Time for the pool!" since it matches `SUMMER`. In each case statement, 
+we just typed the **value** of the enum rather than writing `Season.WINTER`. Since the 
+compiler already knows that the only possible matches cab be enum values, Java treats 
+the enum type as implicit. If we type `Season.WINTER`, the code will not compile. Also, 
+the code will not compile if we try use the ordinal, the `int` value, for checking the 
+case statement.
+
+### Adding Constructors, Fields, and Methods
+
+While simple enum is composed of just a list of values, we can define a *complex* enum 
+with additional elements. Let's say our zoo wants to keep track of traffic patterns to 
+determine which seasons get the most visitors.
+```
+01: public enum Season {
+02:   WINTER("low"), SPRING("Medium"), SUMMER("Hight"), FALL("Medium");
+03:   private final String expectedVisitors;
+04:   private Season(String expectedVisitors) {
+05:     this.expectedVisitors = expectedVisitors;
+06:   }
+07:   public void printExpectedVisitors() {
+08:     system.out.println(expectedVisitors);
+09:   }
+10: }
+```
+Things to notice.
+On line 2, the list of enum values ends with a semicolon (;). While this is optional 
+when our enum is composed solely of a list of values, it is required if there is 
+anything in the enum besides the values.
+Lines 3-10 are regular Java code. We have an instance variable, a constructor, and a 
+method. We mark the instance variable private and final on line 3 so that our enum 
+properties cannot be modified.
+
