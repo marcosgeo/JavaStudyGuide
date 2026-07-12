@@ -1,9 +1,10 @@
-# Chapter 7 - Beyond Classes
+# Chapter 7: Beyond Classes
 
 This chapter introduces other top-level types available in java, beyond classes, 
-including *interfaces*, *enums*, *sealed classes*, and *records*. Many of the basic 
-rules applied to methods, applies hero to, but with additional rule for each type.
-Encapsulation and polymorphism are discussed hero too.
+including [*interfaces*](#implementing-interfaces), [*enums*](#working-with-enums), 
+[*sealed classes*](#sealing-classes), and [*records*](#encapsulating-data-with-records). 
+Many of the basic rules applied to methods, applies hero to, but with additional rule 
+for each type. Encapsulation and polymorphism are discussed hero too.
 
 ## Implementing Interfaces
 
@@ -62,10 +63,13 @@ public class FieldMouse implements Climb, CanBurrow {
 ```
 The `FieldMouse` class declares that it implements the `Climb` and `CanBurrow` 
 interfaces and includes an overridden version of `getSpeed()` inherited from both 
-interfaces. The method signature of `getSpeed()` matches exactly, and the return type 
+interfaces. 
+
+The method signature of `getSpeed()` matches exactly, and the return type 
 is covariant, since a `Float` can be implicitly cast to a `Number`. The access modifier 
 of the interface method is implicitly public in `Climb`, but the concrete class 
 `FieldMouse` must explicitly declare it.
+
 If any of the interfaces defines abstract methods, the the concrete class is required 
 to override them. In this case, `FieldMouse` implements two interfaces at the same time 
 since the `getSpeed()` overrides two abstract methods with one single implementation.
@@ -227,6 +231,7 @@ Even though the two method implementations are identical, the method in the `Geo
 class reduces the access modifier on the method from *public* to *package access*.
 
 ## Declaring Concrete Interface Methods
+[top](#top)
 
 The six interfaces member types that we need to know. Until now, we cover the first two.
 
@@ -407,6 +412,7 @@ public interface Schedule {
 We could write this interface without using a private method by copying the contents of 
 `checkTime()` method into the places it is used. It's a lot shorter and easier to read 
 if we copy.
+
 We could have also declared `checkTime()` as public, but this would expose the method 
 to use outside the interface. One important principle of encapsulation is to not expose 
 the internal workings of a class or interface when not is required.
@@ -493,6 +499,7 @@ does not compile.
 
 
 ## Working with Enums
+[back-to-top](#chapter-7-beyond-classes)
 
 It is common to have a type that can only have a finite set of values, such as days of 
 week, season of the year, primary colors, and so on. An *enumeration*, or *enum*, is 
@@ -510,7 +517,7 @@ public enum Season {
 We refer to an enum that only contains a list of values as a *simple enum*. When 
 working with simple enums, the semicolon at the end of the list is optional. Enum 
 values are considered constants and are commonly written using snake case, e.g.: 
-ROCK_ROAD, MINT_CHOCOLATE_CHIP.
+ROCK_ROAD, MINT_CHOCOLATE_CHIP. The list of values is the first statement of an enum.
 ```
 var s Season.SUMMER;
 System.out.println(Season.SUMMER);    // SUMMER
@@ -550,6 +557,7 @@ The first statement works and assigns the proper enum value to `s`. Note that th
 is not creating an enum value. Each enum value is created once when the enum is first 
 loaded. Once the enum has been loaded, it retrieves the single enum value with the 
 matching name.
+
 Since there is no enum value with the lowercase name "summer", Java throws up its hands 
 in defeat an throws an `IllegalArgumentException`.
 
@@ -583,7 +591,7 @@ with additional elements. Let's say our zoo wants to keep track of traffic patte
 determine which seasons get the most visitors.
 ```
 01: public enum Season {
-02:   WINTER("low"), SPRING("Medium"), SUMMER("Hight"), FALL("Medium");
+02:   WINTER("Low"), SPRING("Medium"), SUMMER("High"), FALL("Medium");
 03:   private final String expectedVisitors;
 04:   private Season(String expectedVisitors) {
 05:     this.expectedVisitors = expectedVisitors;
@@ -594,10 +602,635 @@ determine which seasons get the most visitors.
 10: }
 ```
 Things to notice.
+
 On line 2, the list of enum values ends with a semicolon (;). While this is optional 
 when our enum is composed solely of a list of values, it is required if there is 
 anything in the enum besides the values.
+
 Lines 3-10 are regular Java code. We have an instance variable, a constructor, and a 
 method. We mark the instance variable private and final on line 3 so that our enum 
 properties cannot be modified.
 
+All enum constructors are implicitly private, with the modifier being optional and an 
+enum constructor will not compile if it contains a public or protected modifier.
+
+The parentheses on line 2 are constructor calls, but without the `new` keyword, 
+normally used for objects. The first time we ask for any of the enum values, Java 
+constructs all of the enum values. After that, Java just returns the already constructed 
+enum values. Given that, the constructor below will be called only once:
+```
+public enum OnlyOne {
+  ONCE(true);
+  private OnlyOnee(boolean b) {
+    System.out.print("constructing, ");
+  }
+}
+---
+public class PrintTheOne {
+  public static void main(String[] args) {
+    System.out.print("begin, ");
+    OnlyOne firstCall = OnlyOne.ONCE;    // prints "constructing, "
+    OnlyOne secondCall = OnlyOne.ONCE;    // doesn't print anything
+    System.out.print("end");
+  }
+}
+```
+This class prints this: `begin, constructing, end`. If the `OnlyOne` enum was used 
+earlier in the program, and therefore initialized sooner, then the line that declares 
+the `firstCall` variable would not print anything.
+
+To call an enum method we just use the enum value followed by the method call:
+```
+Season.SUMMER.printExpectedVisitors();    // High
+```
+
+We can define different methods for each enum value. For example, our *zoo* has different 
+seasonal hours. We can keep track of the hours through instance variables, or we can let 
+each enum value manage hours itself.
+```
+public enum Season {
+  WINTER {
+    public String getHours() { return "10am-3pm"; }
+  },
+  SPRING {
+    public String getHours() { retun "9am-5pm"; }
+  },
+  SUMMER {
+    public String getHours() { return "9am-7pm"; }
+  },
+  FALL {
+    public String getHours() { return "9am-5pm"; }
+  };
+  public abstract String getHours();
+}
+```
+Note that the values are comma separated with a semi-colon at the end, so the values 
+are a single and fist statement of this enum.
+
+In this case the enum has an *abstract method*, this means that each and every enum 
+value is required to implement this method. If we forget to implement the method for 
+one of the values, we'll get a compiler error. 
+
+An enum can even implement an interface, as this just requires overriding the abstract 
+methods:
+```
+public interface Weather { int getAverageTemparature(); }
+---
+public enum Season implements Weather {
+  WINTER, SPRING, SUMMER, FALL;
+  public int getAverageTemperature() { return 30; }
+}
+```
+This king of thing should be used with caution, just because an enum can have lots of 
+methods doesn't mean that it should. Is a good practice the keep the things as simple 
+as possible. When  enum get too long or too complex, they are hard to read.
+
+## Sealing Classes
+[top](#chapter-7-beyond-classes)
+
+A *sealed class* is a class that restricts which other classes may directly extend id. 
+As an enum with many constructors, fields, and methods may start to resemble a full-
+featured class with a limit of direct subclasses, *sealed class* is exactly that. 
+
+### Declaring a Sealed Class
+
+A sealed class declares a list of classes that can extend it, while the subclasses 
+declare that they extend the sealed class.
+```
+public sealed class Bear permits Kodiak, Panda {}
+---
+public final class Kodiak extends Bear {}
+---
+public non-sealed class Panda extends Bear {}
+```
+
+**Sealed Class Keywords**
+  - **sealed**: indicates that a class or interface may on be extended/implemented by 
+ named classes or interfaces.
+  - **permits**: used with the sealed keyword to list the classes and interfaces allowed
+  - **non-sealed**: applied to a class or interface that extends a sealed class, 
+ indicating that it can be extend by unspecified classes
+ 
+Some examples that does not compile:
+``` 
+public class sealed Frog permits GlassFrog {}    // does not compile
+public final class GlassFrog extends Frog {}
+---
+public abstract sealed class Wolf permits Timber {}
+public final class Timber extends Wolf {}
+public final class MyWolf exteds Wolf {}    // does not compile
+```
+The first example does not compile because the `class` and `sealed` modifiers are in 
+the wrong order. The modifier hat to be before the class type. The second example does 
+not compile because `MyWolf` ins't listed in the declaration of `Wolf`.
+
+### Compiling Sealed Classes
+
+Sealed classes needs to be declared (an compiled) in the same package as its direct 
+subclasses and the subclasses need to extends the sealed.
+```
+//Penguin.java
+package zoo;
+public sealed class Penguin permits Emperor {}    // does not compile
+---
+Emperor.java
+package zoo;
+public final class Emperor {}
+```
+Even though the `Emperor` class is declared, it does not extend the `Penguin` class.
+In a more advanced topic, *modules*, we will see *named modules*, which allow sealed 
+classes an their direct subclasses in a different package, provided that they are in 
+the same named module.
+
+### Specifying the Subclass Modifier
+
+While some types, like interfaces, have a certain number of implicit modifiers, sealed 
+classes do not. *Every class that directly extends a sealed class must specify exactly* 
+*one of the following three modifiers*: `final`, `sealed`, or `non-sealed`.
+
+**A _final_ subclass**
+
+```
+public sealed class Antelope permits Gazelle {}
+---
+public final class Gazelle extends Antelope {}
+--
+public class George extends Gazelle {}    // does not compile
+```
+Just as with a regular class, the `final` modifier prevents the subclass `Gazelle` from 
+being extended further.
+
+**A _sealed_ subclass**
+
+```
+public sealed class Mammal pertmits Equine {}
+---
+public sealed class Equine extends Mammal pertmits Zebra {}
+---
+public final class Zebra extends Equine {} 
+```
+Despite allowing indirect subclasses not named in `Mammal`, the list of classes that 
+can inherit `Mammal`is still fixed. If we have a reference to a `Mammal` object, it must 
+be a `Mammal`, `Equine`, or `Zebra`.
+
+**A _non-sealed_ subclass**
+
+The `non-sealed` modifier is used to open a `sealed` parent class to potentially unknown 
+subclasses. Let's modify a previous example:
+```
+public sealed class Wolf permits Timber {}
+---
+public non-sealed class Timber extends Wolf {}
+---
+public class MyWolf extends Timber {}
+```
+In this example we are able to create an indirect subclass of `Wolf`, called `MyWolf`, 
+not named in the declaration of `Wolf`. Also notice that `MyWolf` is not final, so it 
+my be extended by any subclass, such as `MyFurryWolf`.
+
+**Omitting the _permits_ clause**
+
+If we have a single file with two top-level classes defined inside of it, the `permits` 
+clause could be omitted. The two declaration bellow are equivalent
+```
+// Snake.java
+public sealed class Snake permits Cobra {}
+final class Cobra extends Snake {}
+---
+// Snake.java
+public sealed class Snake {}
+public class Cobra extends Snake {}
+```
+It these class were in separate files, this code would not compile.
+In nested subclasses, is the same rule:
+```
+// Snake.java
+public sealed class Snake {
+  final class Cobra extends Snake {}
+}
+```
+While is allowed to omit the `permits` clause in certain cases, like the above, it is 
+not a good practice. In nested classes the syntax is this:
+```
+public sealed class Snake permits Snake.Cobra {
+  final class Cobra extends Snake {}
+}
+```
+If all subclasses are nested, is recommended to omit the the `pertmits` clause.
+
+
+### Sealing Interfaces
+
+Interfaces can also be sealed in the same way to classes, and many of the same rules 
+apply. For example, the *sealed interface* must appear in the same package of named 
+module as the classes or interfaces that directly extend or implement it.
+
+One distinct feature of a sealed interface is that the `permits` list can apply to a 
+class that implements the interface or an interface that extends the interface.
+```
+// sealed interface
+public sealed interface Swims permits Duck, Swan, Floats {}
+---
+// classes permitted to implement sealed interface
+public final class Duck implements Swims {}
+---
+public final class Swan implements Swims {}
+---
+// interface permitted to extend sealed interface
+public non-sealed interface Floats extends Swims {}
+```
+
+### Reviewing Sealed Class Rules
+
+**Sealed Class Rules**
+- sealed classes are declare with the `sealed` and `permits` modifiers.
+- sealed classes must be declared in the same package or named module as their direct 
+  subclasses.
+- direct subclasses of sealed classes must be marked `final`, `sealed`, or `non-sealed`.
+- the `permits` clause is optional if the sealed class and its direct subclasses are 
+  declared in the same file or the subclasses are nested the sealed class.
+- interfaces can be sealed to limit the classes that implements them or the interfaces 
+  that extend them.
+[back to start of section](#sealing-classes)
+
+## Encapsulating Data with Records
+[back to top](#chapter-7-beyond-classes)
+
+The best new Java type was saved for last! *Records* are exciting because they remove a 
+ton of boilerplate code.
+
+### Understanding Encapsulation
+
+A simple *POJO* to hold data:
+```
+public class Crane {
+  int numberEggs;
+  String name;
+  public Crane(int numberEggs, String name) {
+    this.numberEggs = numberEggs;
+    this.name = name;
+  }
+}
+```
+Since the fields have *package access*, some code outside of the class could change the 
+data, causing inconsistencies. Obvious this is not good, so we need a more robust 
+implementation of `Crane`. *Encapsulation* is a way to protect class members by 
+restricting access to them. In Java this is done declaring all instance variables 
+private and creating access methods to them.
+
+An encapsulated POJO class:
+```
+public final class Crane {
+  private final int numberEggs;
+  private final String name;
+  public Crane(int numberEggs, String name) {
+    if (numberEggs >= 0) this.numberEggs = numberEggs;    // guard condition
+    else throw new IllegalArgumentException();
+    this.name = name;
+  }
+  public int getNumberEggs() {
+    return numberEggs;
+  }
+  public String getName() {
+    return name;
+  }
+}
+```
+Since the attributes are private and final, and there are no setter, this class is 
+creates immutables objects (additional rules on chapter 6).
+
+### Applying Records
+
+The `Crane` class is 15 lines long and could be written much more succinctly as shown 
+below: 
+```
+public record Crane(int numberEggs, String name) {}
+```
+A *record* is a special type of data-oriented class in which the compiler inserts 
+boilerplate code for us. In fact, the compiler insert much more than the 14 lines 
+written earlier. As bonus, the compiler inserts these useful methods: `equals()`, 
+`hashCode()`, and `toString()`.
+
+Creating an instance of a `Crane` *record* and printing some fields is simple:
+```
+var mom = new Crane(4, "Cammy");
+System.out.println(mom.numberEggs());    // 4
+System.out.println(mon.name());    // Cammy
+```
+Behind the scenes, the compiler creates a *constructor* for us with the parameters in 
+the same order in which they appear in the `record` declaration. Omitting or changing 
+the type order will lead to a compiler error:
+```
+var mom1 = new Crane("Cammy", 4);    // does not compile
+var mom2 = new Crane("Cammy");    // does not compile
+```
+For each field, the compiler also creates an *accessor method* using the *field name* 
+and a set of parentheses.
+
+**Member Automatically Added to Records**
+- **constructor**: a constructor with the parameters in the same order as the record declaration
+- **accessor method**: one accessor for each field
+- **equals()**: a method to compare two elements that returns true if each field is equal in terms of `equals()`
+- **hashCode()**: a consistent `hashCode()` method using all fields
+- **toString()**: a `toString()` implementation that prints each field of the record in a easy-to-read format
+
+Examples of use of a *record*.
+```
+var father = new Crane(0, "Craig");
+System.out.println(father);    // Crane[numberEggs=0, name=Craig]
+
+var copy = new Crane(0, "Craig");
+System.out.println(copy);    // Crane[numberEggs=0, name=Craig]
+System.out.println(father.equals(copy));    // true
+System.out.println(father.hashCode() + ", " + copy.hashCode());    // 1007, 1007
+```
+[back to start of section](#encapsulating-data-with-records)
+
+### Understanding Record Immutability
+
+Since records don't have setters and every field is inherently final and cannot be 
+modified after it has been written in the constructor. In order to "modify" a record, 
+we have to make a new object and copy all the data that we want to preserve.
+```
+var cousin = new Crane(3, "Jenny");
+var friend = new Crane(cousin.numberEggs(), "Janeice");
+```
+
+Just as interfaces are implicitly `abstract`, records are also implicitly `final`. The 
+`final` modifier is optional but assumed.
+```
+public final record Crane(int numberEggs, String name) {}
+```
+Like enums, this means that we can't extend or inherit a record. We could, if we want, 
+implement an interface:
+```
+public interface Bird {}
+public record Crane(int numberEggs, String name) implements Bird{}
+```
+
+In this case, of course, we will have to implement all methods required by the interface.
+
+### Declaring Constructors
+
+We can add constructor to *records*, both, the **long** and **compact** constructors.
+
+**The Long Constructor**
+
+We can just declare the constructor the compiler normally inserts automatically, also 
+known as *long constructor*:
+```
+public record Crane(int numberEggs, String name) {
+  public Crane(int numberEggs, String name) {
+    if (numberEggs < 0 || name.length() < 2) throw new IllegalArgumentException();
+    this.numberEggs = numberEggs;
+    this.name = name;
+  }
+}
+```
+The compiler will not insert a constructor if we define on with the same list of 
+parameters in the same order. Since each field is final, the constructor must set every 
+field.
+
+While being able to declare a constructor is a nice feature of *records*, it's also 
+problematic. If we have 20 fields, we'll need to declare assignments for every one, 
+introducing the boilerplate we sought to remove.
+
+**Compact Constructors**
+
+A *compact constructor* is a special type of constructor used for records to process 
+validation and transformations succinctly. It takes no parameters and implicitly sets 
+all fields.
+```
+public record Crane(int numberEggs, String name) {
+  public Crane {  // compact constructor (no parameters)
+    // all fields are available here
+    if (numberEggs < 0 || name.length() < 2) throw new IllegalArgumentException();
+    name = name.toUpperCase();    // change the input parameter
+  }
+  // long constructor implicitly called at the end of compact constructor
+}
+```
+Great! Now we can check the values we want, and we don't have to list all the 
+constructor parameters and trivial assignments. Java will execute the full constructor 
+after the compact constructor.
+
+While compact constructors can modify constructor parameters, they cannot modify the 
+fields of the record. This will not compile:
+```
+public record Crane(int numberEggs, String name) {
+  public Crane {
+    this.numberEggs = 10;    // does not compile
+  }
+}
+```
+At this point, the instance is not create yet and, beyond this, it is immutable. Removing 
+the `this` reference allows the code to compile, as the constructor parameters is the one 
+been modified instead.
+
+**Is highly recommended that we stick with the compact form of the constructor.**
+
+
+### Overloaded Constructors
+
+We can also create overloaded constructor that use a completely different list of 
+parameters. They are more closely related to the long constructor.
+```
+public record Crane(int numberEggs, String name) {
+  public Crane(String firstName, String lastName) {
+    this(0, firstName + " " + lastName);
+  }
+}
+```
+*The first line of an overloaded constructor in a record must be an explicit call to* 
+*another constructor via `this()`*. If there are no other constructor, the long constructor 
+must be called. In contrast of the constructor in a class, where calling `super()` or 
+`this()` was often optional in constructor declarations.
+
+Note also that all the transformation must occur in the first line. After the first line, 
+all of the fields will already be assigned, and the object is immutable.
+```
+public record Crane(int numberEggs, String name) {
+  public Crane(int numberEggs, String firstName, String lastName) {
+    this(numberEggs + 1, firstName + " " + lastName);
+    numberEggs = 10;    // no effect, since this is modifying the parameter
+    this.numberEggs = 20;    // does not compile
+  }
+}
+```
+
+### Customizing Records
+
+Until now we're focused on features that are more commonly used. Records also support 
+many of the same features as a class, here are the summary of records features:
+- overloaded and compact constructors
+- instance methods including overriding any provided methods (accessors, equals(), 
+  hashCode(), toString())
+- nested classes, interfaces, annotation, enum, and records
+
+Here an example of overriding methods:
+```
+public record Crane(int numberEggs, String name) {
+  @Override public int numberEggs() { return 10; }
+  @Override public String toString() { return name; }
+}
+```
+
+While we can add methods, static fields, and other data types, we cannot add instance 
+fields out the record declaration, even if they are private. Doing so defeats the purpose 
+of using a record and could break immutability.
+```
+public record Crane(int numberEggs, String name) {
+  private static int type = 10;
+  public int size;    // does not compile
+  private boolean friendly;    // does not compile
+}
+```
+
+While it's as useful feature that records support many of the same members as a class, we 
+need to try to keep them simple, since the more complicated they get, the less usable 
+they become.
+[back to start of section](#encapsulating-data-with-records)
+
+## Creating Nested Classes
+
+A *nested class*  is a class that is defined within another class. A nested class can 
+come in one of four flavors:
+- **inner class**: a non-static type defined at the member level of a class.
+- **static nested class**: a static type defined at the member level of a class.
+- **local class**: a class defined within a method body.
+- **anonymous class**: a special case of a local class that does not have a name.
+
+There area many benefits of using nested classes. They can define helper classes and 
+restrict them to the containing class, thereby improving encapsulation. They can make it 
+easy to create a class that will be used in only one place. They can even make code 
+cleaner and easier to read.
+
+When used improperly, though, nested classes can sometime make the code harder to read. 
+They also tend to tightly couple the enclosing and inner class, but there may be cases 
+where we want to use the inner class by itself. In this case, we should move the inner 
+class out into a separate top-level class.
+
+
+### Declaring an Inner Class
+
+An *inner class*, also called a *member inner class*, is a non-static type defined at the 
+member level of a class (the same level as the methods, variables, constructor). Because 
+they are not top-level type, they can use any of the four access levels, not just public 
+and package access.
+
+Inner classes have the following properties:
+- can be declared public, protected, package, or private
+- can extend a class and implement interfaces
+- can be marked abstract or final
+- can access members of the outer class, including private members
+
+The last property means that the inner class can access variables in the outer class 
+without doing anything special. Here an illustrative example with a complicated way to 
+print "Hi" three times.
+```
+01: public class Home {
+02:   private String greeting = "Hi";    // outer class instance variable
+03:
+04:   protected class Room {    // inner class declaration
+05:     public int repeat = 3;
+06:     public void enter() {
+07:       for (int i = 0; i < repeat; i++) greet(greeting);
+08:     }
+09:     private static void greet(String message) {
+10:       System.out.println(message); 
+11:     }
+12:   }  // end of Room class
+13:
+14:   public void enterRoom() {    // instance method in outer class
+15:     var room = new Room();    // inner class instance
+16:     room.enter();
+17:   }
+18:   public static void main(String[] args) {
+19:     var home = new Home();    // create the outer class instance
+20:     home.enterRoom();
+21:   }
+22: }
+```
+
+An inner class declaration looks just like a stand-alone class declaration except that it 
+happens to be located inside another class. Line 7 shows that the inner class just refers 
+to `greeting` as if it were defined in the `Room` class. But in fact, it is *available*, 
+since it is a member of the outer class like `Room` is also a member of the outer class.
+
+Since an inner class is not static, it hat to be called using an instance of the outer 
+class. That means we have to create two objects. Line 19 create the outer `Home` object, 
+while line 15 creates the inner `Room` object. It's important to notice that line 15 
+doesn't require an explicit instance of `Home` because it is an instance method within 
+`Home`. This works because `enterRoom()` is an instance method within the `Home` class. 
+Both `Room` and `enterRoom()` are members of `Home`.
+
+In line 9  was declared an static method in the inner class, this is a new feature 
+include in Java since version 16. All four type of nested classes can now define static 
+variables and methods.
+
+**Instantiating an Instance of an Inner Class**
+
+There is another way to instantiate `Room` that looks odd at first. This syntax isn't 
+used often enough to get used to it:
+```
+20:   public static void main(String[] args) {
+21:     var home = new Home();
+22:     Room room = home.new Room();    // create the inner class instance
+23:     room.enter();
+24:   }
+```
+At lines 21 and 22, we need an instance of `Home` to create a `Room`. We can't just call 
+`new Room()` inside the static `main()` method, because Java won't know which instance of 
+`Home` it is associated with. Java solves this by calling `new` as if it were a method 
+on the `room` variable. So, we can shorten lines 21-23 to a single line:
+```
+new Home().new Room().enter();     // yes, is ugly, but is possible
+```
+
+When compiled, the Home.java file, two class files will be created: one for `Home` and 
+other for `Room`, named `Home.class` and `Home$Room.class`, respectively.
+
+### Referencing Members of an Inner Class
+
+Inner class can have the same variable names as outer classes, making scope a little 
+tricky. There is a special way of calling `this` to say which variable we want to access.
+Although the code below is common in a Java certification exam, we do not have to do this 
+in real production code.
+```
+01: public class A {
+02:   private int x 10;
+03:   class B {
+04:     private int x = 20;
+05:     class C {
+06:       private in x = 30;
+07:       public void allTheX() {
+08:         System.out.println(x);    // 30
+09:         System.out.println(this.x);    // 30
+10:         System.out.println(B.this.x);    // 20
+11:         System.out.println(A.this.x);    // 10
+11:       }
+12:     }
+13:   }
+14:   public static void main(String[] args) {
+15:     A a = new A();
+16:     A.B v = a.new B();
+17:     A.B.C c = b.new C();
+18:     c.allTheX();
+19:   }
+20: }
+```
+This kind of code make anyone cringe. It has two nested classes. Line 15 instantiate the 
+outermost one. Line 16 uses the awkward syntax to instantiate a `B`. Note that the type 
+is `A.B`. We could have written `B` as the type because that is available at the member 
+level of `A`. Java knows where to look for it. On line 17, we instantiate a `C`. This 
+time, the `A.B.C` type is necessary to specify. `C` is too deep for Java know where to 
+look for. Then line 18 call a method on the instance variable `c`.
+
+Lines 8 and 9 are the type of code that we are used to seeing. They refer to the instance 
+variable on the current class, the one declared on line 6. Line 10 uses `this` in a 
+special way, we still want an instance variable. But this time, we want the one on the 
+`B` class, which is the variable on line 4. Line 11 does the same thing for class `A`, 
+getting the variable from line 2;
+
+
+### Creating a _static_ Nested Class
