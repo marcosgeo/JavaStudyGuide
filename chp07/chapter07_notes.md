@@ -2,9 +2,12 @@
 
 This chapter introduces other top-level types available in java, beyond classes, 
 including [*interfaces*](#implementing-interfaces), [*enums*](#working-with-enums), 
-[*sealed classes*](#sealing-classes), and [*records*](#encapsulating-data-with-records). 
+[*sealed classes*](#sealing-classes), [*nested classes*](#creating-nested-classes), 
+and [*records*](#encapsulating-data-with-records). 
+
 Many of the basic rules applied to methods, applies hero to, but with additional rule 
-for each type. Encapsulation and polymorphism are discussed hero too.
+for each type. Encapsulation and [polymorphism](#understanding-polymorphism) are 
+discussed hero too.
 
 ## Implementing Interfaces
 
@@ -1234,3 +1237,410 @@ getting the variable from line 2;
 
 
 ### Creating a _static_ Nested Class
+
+A *static nested class* is a static type defined at the member level. Unlike an inner 
+class, a static nested class can be instantiated without an instance of the enclosing 
+class. The trade-off, though, is that it can't access instance variables or methods 
+declared in the outer class. It is like a top-level class except for the following:
+
+- the nesting creates a namespace because the enclosing class name must be used to refer to it.
+- it can additionally be marked private or protected.
+- the enclosing class can refer to the fields and methods of the static nested class
+
+``` 
+public class Park {
+  static class Ride {
+    private int price = 6;
+  }
+  public static void main(String[] args) {
+    var ride = new Ride();
+    System.out.println(ride.price);
+  }
+}
+```
+The nested class is initialized inside the main without the need of an instance of `Park` 
+and we are allowed to access private instance variables of `Ride`.
+
+### Writing a Local Class
+
+A *local class* is a nested class defined within a method. Like local variables, a local 
+class declaration does not exist until the method is invoked, and it goes out of scope 
+when the method returns. The instances can be created only inside the method and can be 
+returned from the method. Local classes have the following properties:
+
+- the do not have an access modifier
+- the can be declared final or abstract
+- the have access to all fields and methods of the enclosing class
+- they can access final and effectively final local variables
+
+An example with a complicated way to multiply two numbers:
+```
+01: public class PrintNumbers {
+02:   private int length = 5;
+03:   public void calculate() {
+04:     final int width = 20;
+05:     class Calculator {
+06:       public void multiply() {
+07:         System.out.print(length * width);
+08:       }
+09:     }
+10:     var calculator = new Calculator();
+11:     calculator.multiply();
+12:   }  // end of method
+13:   public static void main(String[] args) {
+14:     var printer = new PrintNumbers();
+15:     print.calculate();    // 100
+16:   }
+17: }
+```
+
+Lines 5 - 9 are the local class. That class's scope ends on line 12, where the method 
+ends. Line 7 refers to an instance variable and a final local variable, so both variable
+references are allowed from within the local class.
+
+Local classes can only access *final*  or *effectively final* variables. If the value of
+one of the variable that a local class access could change, than the code will not 
+compile. This occurs because, when compiled, there will be two files, and Java will not 
+have a way to know the value of the variable. If the variable is *final* or *effectively* 
+*final*, the compiler will pass a reference for the local class and thus, it can access 
+the value of the variable.
+
+### Defining an Anonymous Class
+
+An *anonymous class* is a specialized form of a local class that does ot have a name. It 
+is declared and instantiated all in one statement using the `new` keyword, a type name 
+with parentheses, and a set of braces `{}`. Anonymous classes must extend an existing 
+class or implement an existing interface. They are useful when we have a short 
+implementation that will not be used anywhere else.
+
+```
+01: public class ZooGiftShop {
+02:   abstract class SaleTodayOnly {
+03:    abstract int dollarsOff();
+04:   }
+05:   public int admission(int basePrice) {
+06:     SaleTodayOnly sale = new SaleTodayOnly() {
+07:       int dollarsOff() { return 3; }
+08:     };
+09:     return basePrice - sale.dollarsOff();
+10:   }
+11: }
+```
+Lines 2 - 4 define an abstract class. Lines 6 - 8 define the anonymous class. Note that 
+`SaleTodayOnly` is abstract and we create a object that type, this is possible because we 
+provide the class body right there -- anonymously. Since we are creating a new variable, 
+`sale`, we terminate on line 8 with a semicolon.
+
+We can define anonymous classes outside a method body. The following code may look like 
+we are instantiating an interface as an object, but the `{}` after the interface name 
+indicates that this is an anonymous class implementing the interface:
+```
+public class Gorilla {
+  interface Climb {}
+  Climb climbing = new Climb() {};
+}
+```
+
+#### Anonymous Classes and Lambda Expressions
+
+Prior Java 8, anonymous classes were frequently used for asynchronous tasks and event 
+handlers. The following shows an anonymous class used as an event handler in a JavaFX 
+application:
+```
+Button redButton = new Button();
+redButton.setOnAction( new EventHandler<ActionEvent>() {
+  public void handle(ActionEvent e){
+    System.out.println("Red button pressed");
+  }
+})
+```
+
+Since the introduction of lambda expressions, anonymous classes are now often replaced 
+with much shorter implementations:
+```
+Button redButton = new button();
+redButton.setOnAction(e -> System.out.println("Red button pressed!"));
+```
+Lambda expressions will be cover in detail in the next chapter.
+
+### Reviewing Nested Classes
+
+**Modifiers in nested classes**
+
+    +---------------------+-------------+---------------+-------------+-----------------+
+    | Permitted modifiers | Inner class | static nested | Local class | Anonymous class |
+    |                     |             | class         |             |                 |
+    +---------------------+-------------+---------------+-------------+-----------------+
+    | access modifiers    |  All        |  All          |  None       |  None           |
+    +---------------------+-------------+---------------+-------------+-----------------+
+    | abstract            |  Yes        |  Yes          |  Yes        |  No             |
+    +---------------------+-------------+---------------+-------------+-----------------+
+    | final               |  yes        |  Yes          |  Yes        |  No             |
+    +---------------------+-------------+---------------+-------------+-----------------+
+
+[back to to](#chapter-7-beyond-classes)
+
+
+## Understanding Polymorphism
+
+Polymorphism is the property of an object to take on many different forms, that is, a 
+Java object may be accessed using:
+- a reference with the same type as the object
+- a reference that is a superclass of the object
+- a reference that defines an interface the object implements or inherits
+
+Furthermore, a cast is not required if the object is being reassigned to a supertype or 
+interface of the object.
+
+```
+public class Primate {
+  public boolean hasHair() {
+    return true;
+  }
+}
+---
+public interface HasTail {
+  public abstract boolean isTailStriped();
+}
+---
+public class Lemur extends Primate implements HasTail {
+  public boolean isTailStriped() {
+    return false;
+  }
+  public int age = 10;
+  public static void main(String[] args) {
+    Lemur lemur = new Lemur();
+    System.out.println(lemur.age);
+
+    HasTail hasTail = lemur;
+    System.out.println(hasTail.isTailStriped());
+    
+    Primate primate = lemur;
+    System.out.println(primate.hasHair()); 
+  }
+}
+```
+The most important thing to note about this examples is that only one object, `Lemur`, is 
+created. Polymorphism enables an instance of `Lemur` to be reassigned or passed to a 
+method using of its super-types, such as `Primate` or `HasTail`.
+
+Once the object has been assigned to a new reference type, only the methods and variables 
+available to that reference type are callable on the object without an explicit cast.
+
+### Object vs. Reference
+
+In Java, all objects are accessed by reference and we never have direct access to the 
+object itself. Conceptually the object exist in the memory and regardless ot the type of 
+the reference we have for the object in memory, the object itself does't change.
+```
+Lemur lemur = new Lemur();
+Object lemurAsObject = lemur;
+```
+Even though the `Lemur` object has been assigned to a reference with a different type, 
+the object itself has not changed and still exists as a `Lemur` object in memory. What 
+has changed is our ability to access methods within the `Lemur` class with `lemurAsObject` 
+reference.
+
+This could be summarized in this two principles:
+- the type of the object determines which properties exist within the object in memory.
+- the type of the reference to the object determines which methods and variables are available.
+
+### Casting Objects
+
+Once we changed the reference type we lost access to more specific members defined in the 
+subclass that still exist within the object. We can reclaim those references by casting 
+the object back to the specific subclass it came from:
+```
+Lemur lemur = new Lemur();
+
+Primate primate = lemur;    // implicit cast to supertype
+
+Lemur lemur2 = (Lemur)primate;    // explicit cast to subtype
+
+Lemur lemur3 = primate;   // does not compile (missing cast)
+``` 
+Since `Lemur` is a subtype of `Primate`, we can cast the object to the supertype implicit, 
+that is, without the cast operator. When we cast it back to a `Lemur` object using an 
+explicit cast, gaining access to all of the methods and field in the `Lemur` class. The 
+last line does not compile because an explicit cast is required. 
+
+We could cast the `Primate` object to other subtype than `Lemur` provided that the other 
+subtype is compatible with `Lemur`.
+
+### Disallowed Casts
+
+Consider this example:
+```
+public class Bird {}
+---
+public class Fish {
+  public static void main(String[] args) {
+    Fish fish = new Fish();
+    Bird bird = (Bird)fish;    // does not compile
+  }
+}
+``` 
+In this example, the classes `Fish` and `Bird` are not relate through any class hierarchy 
+that the compiler is aware of; therefore, the code will not compile. While the both 
+extend `Object` implicitly, they are considered unrelated types, since one cannot be a 
+subtype of the other.
+
+### Casting Interfaces
+
+While the compiler can enforce rules about casting to unrelated types for classes, it 
+cannot always do the same for interfaces. Instances support multiple inheritance, which 
+limits what the compiler can reason about them. When holding a reference toa particular 
+class, the compiler doesn't know which specific subtype it is holding.
+
+The compiler does not allow a cast from an interface reference to an object reference if 
+the object type cannot possibly implement the interface, such as if the class is marked 
+final.
+
+### The _instanceof_ Operator
+
+The *instanceof* operator can be used to check whether an object belongs to a particular 
+class or interface and to prevent a ClassCastException at runtime. Consider this:
+```
+class Rodent {}
+
+public class Capybara extends Rodent {
+  public static void main(String[] args) {
+    Rodent rodent = new Rodent();
+    var capybara = (Capybara)rodent;    // ClassCastException
+  }
+}
+```
+To prevent the exception we need to do this:
+```
+if (rodent instanceof Capybara c) {
+  // so something with c
+}
+```
+
+Note that the compiler does not allow `instanceof` operator be used with unrelated types.
+```
+public class Bird {}
+
+public class Fish {
+  public static void main(String[] args) {
+    Fish fish = new Fish();
+    if (fish instanceof Bird b) {    // does not compile
+      // do something with b
+    }
+  }
+}
+```
+
+### Polymorphism and Method Overriding
+
+In Java, polymorphism states that when we override a method, we replace all calls to it, 
+even those defined in the parent class. Example:
+```
+class Penguin {
+  public int getHeight() { return 3; }
+  public voi printInfo() {
+    System.out.print(this.getHeight());
+  }
+}
+---
+public class EmperorPenguin extends Penguin {
+  public int getHeight() { return 8; }
+  public static void main(String[] args){
+    new EmperorPenguin().printInfo();
+  }
+}
+```
+The `getHeight()` is overridden in the subclass, meaning all call to it are replaced at 
+runtime. Despite `printInfo()` being defined in the `Penguin` class, calling `getHeight()` 
+on the object *calls the method associated with the precise object in memory*, not the 
+current reference type where it is called.
+
+Polymorphism allows us to create complex inheritance models with subclasses that have 
+their own custom implementation of overridden methods. It also means the parent class 
+does not need to be updated to use the custom or overridden method. If the method is 
+properly overridden, then the overridden version will be used in all places that it is 
+called.
+
+### Overriding vs. Hiding Members
+
+Hiding members is not a form of polymorphism since the methods and variables maintain 
+their individual properties. Unlike method overriding, hiding members is very sensitive 
+to the reference type and location where the member is being used.
+```
+class Penguin {
+  public static int getHeight() { return 3; }
+  public void printInfo() {
+    System.out.println(this.getHeight());
+  }
+}
+---
+public class CrestedPenguin extends Penguin {
+  public static int getHeight() { return 8; }
+  public static void main(String[] args) {
+    new CreatedPenguin().printInfo();
+  }
+}
+```
+The `CrestedPenguin` example is nearly identical to the previous `EmperorPenguin` example, 
+whit the difference that it prints 3 instead of 8. The `getHeight()` method is `static` 
+and is therefore *hidden*, not *overridden*. The result is that calling `getHeight() in 
+`CrestedPenguin` returns a different value than calling it in `Penguin`, even if the 
+underlying object it the same.
+
+About the fact that we used `this` to access a `static` method in `this.getHeight()`, 
+while permitted to use an instance reference to access a static variable or method, doing 
+so is often discouraged. The compiler will warn us when we access static members in a 
+non-static way. In this case,, the `this` reference had no impact on the program output.
+
+Besides the location, the reference type can also determine the value we get when we are 
+working with hidden members. Let's look to a more complex example.
+```
+class Marsupial {
+  protected int age = 2;
+  public static boolean isBiped() {
+    return false;
+  }
+}
+---
+public class Kangaroo extends Marsupial {
+  protected int age = 6;
+  public static boolean isBiped() {
+    return true;
+  }
+  public static void main(String[] args) {
+    Kangaroo joey = new Kangaroo();
+    Marsupial moey = joey;
+    System.out.println(joey.isBiped());
+    System.out.println(moey.isBiped());
+    System.out.println(joey.age);
+    System.out.println(moey.age);
+  }
+}
+```
+In this example, *only one object (of type Kangaroo)* is created and stored in memory. 
+Since static methods can only be hidden, nor overridden, Java uses the reference type to 
+determine which version of `isBiped()` should be called, result in `joey.isBiped()` 
+printing `true` and `moey.isBiped()` printing `false`. The total output is this:
+```
+true
+false
+6
+2
+```
+Likewise, the `age` variable is hidden, not overridden, so the reference type is used to 
+determine which value to output. This result in `joey.age` returning 6 and `moey.age` 
+returning 2.
+
+
+## Hide Members: a bad practice
+
+Although Java allows us to hide variables and static methods, it is considered an 
+extremely poor coding practice. As we saw in the previous example, the value of the 
+variable or method can change depending on what reference is used, making the code 
+very confusing, difficult to follow, and challenging for others to maintain.
+
+When we are defining a new variable or static method in a child class, it is considered 
+good coding practice to select a name that is not already used by an inherited member. 
+Redeclaring private methods and variables is considered less problematic, though, because 
+the ching class does not have access to the variable in the parent class to begin with.
+[back to top](#chapter-7-beyond-classes)
