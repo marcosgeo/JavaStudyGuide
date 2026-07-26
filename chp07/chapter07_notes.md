@@ -233,8 +233,9 @@ public class Geogette implements Poodle {
 Even though the two method implementations are identical, the method in the `Geogette` 
 class reduces the access modifier on the method from *public* to *package access*.
 
-## Declaring Concrete Interface Methods
 [top](#top)
+
+## Declaring Concrete Interface Methods
 
 The six interfaces member types that we need to know. Until now, we cover the first two.
 
@@ -500,9 +501,9 @@ method is static, though, and cannot call a default or private method, such as
 `playHorn()`, without an explicit reference object. Therefore, the `slowDown()` method 
 does not compile.
 
+[back-to-top](#chapter-7-beyond-classes)
 
 ## Working with Enums
-[back-to-top](#chapter-7-beyond-classes)
 
 It is common to have a type that can only have a finite set of values, such as days of 
 week, season of the year, primary colors, and so on. An *enumeration*, or *enum*, is 
@@ -688,8 +689,9 @@ This king of thing should be used with caution, just because an enum can have lo
 methods doesn't mean that it should. Is a good practice the keep the things as simple 
 as possible. When  enum get too long or too complex, they are hard to read.
 
-## Sealing Classes
 [top](#chapter-7-beyond-classes)
+
+## Sealing Classes
 
 A *sealed class* is a class that restricts which other classes may directly extend id. 
 As an enum with many constructors, fields, and methods may start to resemble a full-
@@ -856,8 +858,9 @@ public non-sealed interface Floats extends Swims {}
   that extend them.
 [back to start of section](#sealing-classes)
 
-## Encapsulating Data with Records
 [back to top](#chapter-7-beyond-classes)
+
+## Encapsulating Data with Records
 
 The best new Java type was saved for last! *Records* are exciting because they remove a 
 ton of boilerplate code.
@@ -1092,7 +1095,8 @@ public record Crane(int numberEggs, String name) {
 While it's as useful feature that records support many of the same members as a class, we 
 need to try to keep them simple, since the more complicated they get, the less usable 
 they become.
-[back to start of section](#encapsulating-data-with-records)
+
+[back to top](#encapsulating-data-with-records)
 
 ## Creating Nested Classes
 
