@@ -1068,5 +1068,201 @@ meet all three of those criteria.
 
 ## Working with Variables in Lambdas
 
+The functional interfaces can appear in three places in lambdas:
+ - the parameters list
+ - local variables declared inside the lambda body
+ - and variables referenced from the lambda body
+
+In this section these three approaches are worked.
+
+### Listing Parameters
+
+We already learned that specifying the type of the parameters is optional, additionally, 
+`var` can be used in place ot the specific type. This means that all three of these 
+statements are interchangeable:
+```
+Predicate<String> p = x -> true;
+Predicate<String> p = (var x) true;
+Predicate<String> p = (String x) -> true;
+```
+
+Since the lambda is being assigned to a `Predicate` that takes a `String`, the type 
+of `x` should be `String`. That why that in the first and second statement it could 
+be omitted.
+
+Another place to look is for the method signature, look for this example, what is 
+the type oc `x`:
+```
+public void whatAmI() {
+  consume( (var x) -> System.out.print(x), 123);
+}
+
+public void consume(Consumer<Integer> c, int num) {
+  c.accept(num)
+}
+```
+
+The `whatAmI()` method creates a lambda to be passed to the `consume()` method. Since 
+the `consume()` method expects an `Integer` as the generic, we known that is what the 
+inferred type of `x` will be.
+
+In some cases, we ca determine the type without even seeing the method signature. What 
+is tye type of `x` here?
+```
+public void counts(List<Integer> list) {
+  list.sort((var x, var y) -> x.compareTo(y));
+}
+```
+
+Here, since we are sorting a list, we can use the type of the list to determine the 
+type of the lambda parameter.
+
+Since lambda parameters are just like method parameters, we can add modifiers to them. 
+Specifically, we can add the `final` modifier or an annotation, as shown below:
+<pre><code>
+public void counts(List<Integer> list) {
+  list.sort((<b>final</b> var x, <b>@Deprecated</b> var y) -> x.compareTo(y))
+}
+</code></pre>
+
+While this tends to be uncommon in real life, modifiers such as these have been known 
+to appear in Java exams.
+
+**Parameter List Formats**
+
+We have three formats for specifying parameter types within a lambda: without types, 
+with types, and with `var`. The compiler requires all parameters in the lambda to 
+use the same format:
+```
+5: (var x, y) -> "Hello";    // does not compile
+6: (var x, Integer y) -> true;    // does not compile
+7: (String x, vary y, Integer z) -> true;    // does not compile
+8: (Integer x, y) -> "goodbye";    // does not compile
+```
+Is quite obvious that all of those examples are a messy.
 
 
+### Using Local Variable Inside a Lambda Body
+
+While it is most common for a lambda body to be a single expression, it is legal to 
+define a block. That block can have anything that is valid in a normal Java block, 
+including local variables declarations. The example below does just that:
+```
+(a, b) -> { int c = 0; return 5; }
+```
+The code above is completely valid: it ignores the provided variables, creates another 
+inside the body, don't use any of the variables and return a constant.
+
+Another example:
+```
+(a, b) -> { int a = 0; return 5; }    // does not compile
+```
+
+Redeclare a variable is not allowed. Here we try to redeclare `a`, Java doesn't let 
+us to create a local variable with the same name as one already declared in that scope.
+
+A hard example: how many syntax errors we can see here:
+```
+11: public void variables(int a) {
+12:   int b = 1;
+13:   Predicate<Integer> p1 = a -> {
+14:     int b = 0;
+15:     int c = 0;
+16:     return b == c;
+17:   }
+18: }
+```
+
+The first is on line 13. The variable `a` was already used in this scope as a method 
+parameter, so it cannot be reused.
+The next syntax error is on line 14, where the code attempts to redeclare local variable 
+`b`
+The final is on line 17. Since line 13 is a variable declaration for `p1`, it must 
+end with a semicolon on line 17.
+
+
+**Keep Lambdas Short**
+
+Having a lambda with multiple lines and a return statement is an indication that we 
+should refactor our code and put it in a separated method. Since lambdas and method 
+references are used in _chained method calls_, shorter they are, easier is to read 
+the code.
+
+
+### Referencing Variables from the Lambda Body
+
+Lambda bodies are allowed to reference some variables from the surrounding code. The 
+following code is legal:
+```
+public class Crow {
+  private String color;
+  public void caw(String name) {
+    String volume = "loudly";
+    Consumer<String> consumer = s -> System.out.println(
+      name + " says " + volume + " that she is " + color
+    );
+  }
+}
+```
+
+This shows that a lambda can access an instance variable, method parameter, o a local 
+variable under certain conditions. The only thing that lambdas _cannot access__ are 
+variables that are not final or effectively final.
+<pre><code>
+02: public class Crow {
+03:   private String color;
+04:   public void caw(String name) {
+05:     String <b>volume = "loudly"</b>;
+06:     name = "Caty";
+07:     color = "black";
+08:
+09:     Consumer<String> consumer = s -> 
+10:       System.out.println(name + " says"      // does not compile
+11:         + volume + " that she id " + color);      // does not compile
+12:     <b>volume = "softly"</b>;
+13:   }
+14: }
+</code></pre>
+
+In this example, the method parameter `name` is not effectively final because it is 
+set on line 6. However, the compiler error occurs on line 10. It's not a problem to 
+assign a value to a non-final variable, but used it inside a lambda is a problem. 
+The variable is no longer effectively final, to the lambda is not allowed to use it.
+
+The variable `volume` is not effectively final since it is updated on line 12. In 
+this case, the compiler error in on line 11. That is, before the reassignment!
+
+[back to top](#chapter-8---lambdas-and-functional-interfaces)
+
+
+## Summary
+
+Lambda expressions, or lambdas, allow passing around blocks of code. The full syntax 
+is this:
+```
+(String a, String b) -> { return a.equals(b); }
+```
+
+The parameter types can be omitted. When only one parameter is specified without a 
+type, the parentheses can also be omitted. The braces and return statement can be 
+omitted for a single statement, mating the short form as follows:
+```
+a -> a.equals(b)
+```
+
+Lambdas can be passed to a method expecting an instance of a functional interface. 
+A lambda ca define parameters or variable in the body as long as their names are 
+different from existing local variables. The body of a lambda is allowed to use any 
+instance or class variables. Additionally, it can use any local variables or method 
+parameters that are final or effectively final.
+
+A method reference is a compact syntax for writing lambdas that refer to methods. 
+There are four types: _static methods_, _instance methods on a particular object_, 
+_instance methods on a parameter_, and _constructor references_.
+
+A functional interface has a single abstract method. Any functional interface can 
+be implemented with a lambda expression. We need to know the built-in functional 
+interfaces, so memorize the [Table 8.4](#working-with-built-in-functional-interfaces) 
+is a must.
+
+[back to to](#chapter-8---lambdas-and-functional-interfaces)
