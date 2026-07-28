@@ -1247,7 +1247,7 @@ The parameter types can be omitted. When only one parameter is specified without
 type, the parentheses can also be omitted. The braces and return statement can be 
 omitted for a single statement, mating the short form as follows:
 ```
-a -> a.equals(b)
+a -> a.equals(b);
 ```
 
 Lambdas can be passed to a method expecting an instance of a functional interface. 
