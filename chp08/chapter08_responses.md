@@ -195,7 +195,30 @@ Options B and C are close. The syntax of a lambda is correct. However, `s` is al
 defined as a local variable, and therefore the lambda can't redefine it. Options D 
 and E use incorrect syntax for a method reference. Option F is correct.
 
-20) 
+
+20) b, d, 
+```
+import java.util.List;
+
+interface Yawn {
+  STring yawn(double d, List<Integer> time);
+}
+
+class Sloth implements Yawn {
+  public String yawn(double zzz, List<Integer> time) {
+    return "Sleep: " + zzz;
+  }
+}
+
+public class Vet {
+  public static String takeNap(Yawn y) {
+    return y.yawn(10, null);
+  }
+  public static void main(String... unused) {
+    System.out.println(takeNap(new Sloth()));
+  }
+}
+``` 
 E
 Option A does not compile because the second statement within the block is missing 
 a semicolon (;) at the end. Option B is an invalid lambda expression because `t` is 
@@ -204,7 +227,8 @@ D are both missing a `return` statement and semicolon. Options E and F are both
 valid lambda expressions, although only option E matches the behavior of the `Sloth`
 class. In particular, option F only print "Sleep:" , not "Sleep: 10.0". 
 
-21) 
+
+21) b
 A, E, F
 A valid functional interface is ont that contains a single abstract method, excluding 
 any public methods that are already defined in the `java.lang.Object` class. `Transport` 
@@ -219,3 +243,4 @@ is inherited. Finally, `Spaceship` is not a valid interface, let alone a functio
 interface, because a default method must provide a body. A quick way to test whether 
 an interface is a functional interface is to apply the `@FunctionalInterface` annotation 
 and check if the code still compiles.
+
