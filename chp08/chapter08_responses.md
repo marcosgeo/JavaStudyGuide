@@ -227,7 +227,6 @@ D are both missing a `return` statement and semicolon. Options E and F are both
 valid lambda expressions, although only option E matches the behavior of the `Sloth`
 class. In particular, option F only print "Sleep:" , not "Sleep: 10.0". 
 
-
 21) b
 A, E, F
 A valid functional interface is ont that contains a single abstract method, excluding 

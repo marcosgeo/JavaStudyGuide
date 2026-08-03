@@ -564,3 +564,102 @@ origin `List`. It is simply a copy.
 
 ## Using the _Set_ Interface
 
+We use a `Set` when we don't want to allow duplicate entries. For example, we might 
+want to keep track of the unique animals that we want to see at the zoo. We aren't 
+concerned with the orde in which we are see these animals, bute there ins't time to 
+see them more than once. 
+
+The main thing that all `Set` implementation hava in commom is that they do not allow 
+duplicates. We will look at each implementation that we need to know to write code.
+
+**Figure 9.3 - Set
+
+![Set](set.png)
+
+
+### Comparing _Set_ Implementations
+
+A `HashSet` stores its elements in a _hash table_, which means the keys are a hash 
+and the values are an `Object`. This means that the `HashSet` uset the `hashCode()` 
+method of the object ot retrive them more efficiently. A valid `hashCode()` doesn't 
+mean every object will get a unique value, but the method is often written in a way 
+that shash values are spread out over a large rangge to reduce collisions.
+
+The main benefit it that addin element and checking whether an element is in the set 
+both have constant time. The trade-off is that we lose the order in which we inserted 
+the elements. Most of the time, we aren't concerned with this in a `Set` anyway, 
+making the `HashSet` the most common set.
+
+A `TreeSet` stores its elements in a sorted tree structure. The main benefit is that 
+the set is always in sorted order. The thade-off is that adding and checking wheter 
+an element exists takes longer that with a `HashSet`, especially as the tree grows 
+larger.
+
+**Figure 9.4 - an representation of the structure of the two types of set**
+
+![structure of set](set_structure.png)
+
+
+### Working with _Set_ Methods
+
+Like a List, we can create an immutable Set in on line or make a copy of an existing 
+one.
+```
+Set<Character> letters = Sef.of("z", "o", "o");
+Set<Character> copy = Set.copyOf(letters);
+```
+
+These two are the only `Set` especific methods that we need to know. The other methods 
+came from `Collection` and the sets behave like the other structures that implements 
+this interface. Let's explore a bit more the differences between tye types of sets, 
+stating with `HashSet`:
+```
+3: Set<Integer> set = new HashSet<>();
+4: boolean b1 = set.add(66);    // true
+5: boolean b2 = set.add(10);    // true
+6: boolean b3 = set.add(66);    // false
+7: boolean b4 = set.add(8);    // true
+8: set.forEach(System.out::println);
+```
+This code prints three lines:
+66
+8
+10
+
+The `add()` method calls is straighforward. The return `true` unless the `Integer` 
+already in the set. Line 6 returns `false`, because we already have 66 in the set, and 
+a se must preserve uniqueness. Line 8 prints the elements of th set in an _arbitrary_ 
+order. In this case, it happens not to be ssorted order or the order in which we added 
+the elements.
+
+The `equals()` method of the object is used to determine equality. The `hashCode()` 
+method of the object is used to know in which bucket of a set to look in, so that Java 
+doesn't have to look through the whole set to find out wheter an object is there. The 
+best case is that hash codes are unique and Java has to call `equals()` on only one 
+object. The worst case is that all implementations of `hashCode()` return the same 
+value and Java has to call `equals()` on every element ot the set. 
+
+Now let's look at the same example with `TreeSet`:
+```
+3: Set<Integer> set = new TreeSet<>();
+4: boolean b1 = set.add(66);    // true
+5: boolean b2 = set.add(10);    // true
+6: boolean b3 = set.add(66);    // false
+7: boolean b4 = set.add(8);    // true
+8: set.forEach(System.out.println);
+```
+
+This time the code prints:
+8
+10
+66
+
+The elements are printed out in this natural sorted order. Numbers implement the 
+`Comparable` interface, whish is used for sorting. Later in this chapter we'll see 
+how to create our own `Comparable` objects.
+
+
+## Using the _Queue_ and _Deque_ Interfaces
+
+
+
