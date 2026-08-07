@@ -661,5 +661,161 @@ how to create our own `Comparable` objects.
 
 ## Using the _Queue_ and _Deque_ Interfaces
 
+We use a `Queue` when elements area added and removed in a specific order. We can 
+think of a queue as a line. For exemple, when we want to enter a stadium and someone 
+is witing in line, we get in line behind that person. The first person to arrive is 
+the ferst to get out of the line, this originates the "FIFO", first-in, first-out, 
+queue.
+
+A `Deque` (double-ended queue), is different from a regular queue in a way that we 
+can isert and remove elements from both the front (head) and back (tail) of the queue.
+A `LinkedList`, in addition to being a `List` it is also a `Deque`, since it implements 
+both interfaces. The trade-off is that it isn't as efficient as a "pure" queue. We can 
+use the `ArrayDeque` class is we don't need the `List` methods.
+
+### Working with _Queus_ and _Deque_ Methods
+
+The `Queue` interface contains six methods, shown in Table 9.3. There are three pieces 
+of functionality and version of the methods that throw an exception or use the return 
+type, such as `null`, for all information. The bolded methods thrown an exception in 
+case something goes wrong.
+
+**Table 9.3 - Queue Methods**
+![Queue methods](queue_methods.png)
+
+Let's show a simple example
+```
+4: Queue<Integer> queue = new LinkedList<>();
+5: queue.add(10);
+6: queue.add(4);
+7: System.out.println(queue.remove());    // 10
+8: System.out.println(queue.peek());    // 4
+```
+
+Line 5 and 6 add elements to the queue. Line 7 asks the first element waiting the 
+longest to come off the queue. Line 8 checks for the next entry in the queue while 
+leaving it in place.
 
 
+The `Deuque` interface supports double-ended queues, it inherits all `Queue` methods 
+and adds more so, it is clear if we are working with the fron or back of the queue.
+
+**Table 9.4 - Deque Methods**
+![Deque methods](deque_methods.png)
+
+
+Let's see a deque example:
+```
+12: Deque<Integer> deque new LinkedList<>();
+13: deque.offerFirst(10);    // true   10<-
+14: deque.offerLast(4);    // true   10<-->4<-
+15: deque.peekFirst();     // 10    10<-->4<-
+16: deque.pollFirst();     // 10     4<-
+17: deque.pollLast();      // 4
+18: deque.pollFirst();     // null
+19: deque.peakFirst();     // null
+```
+
+Line 12 show that we use the same class, `LinkedList` to create a `Deque` or a `Queue`, 
+this is a great example of "coding for an interface", _since the reference variable_ 
+_is a Deque_, we create a `Deque` object.
+
+Lines 13 and 14 successfully add an element to the fron and back of the queue. Some 
+queue are limited in size, which would cause offering an element to the queue to fail. 
+Liine 15 looks at the first element in the queue, but it does not remove it. Lines 16 
+and 17 remove the elements fromt he queue, one from each end. This results in an empty 
+queue. Lines 18 and 19 try to look ate the first element of the queue, resulting in 
+`null`.
+
+
+In addition to FIFO queus, there are LIFO (last-in, first-out) queues, which are commonly 
+refered to as _stacks_, like a stack of plates. We alwasy add or remove from the top 
+of the stack to avoid a mess. We can use the same double-ended queue implementation, 
+_we just change the methods used_!
+
+**Table 9.5 - Using Deque as a stack**
+![Deque as stack](stack_methods.png)
+
+Using the `Deque` as an stack:
+```
+12: Deque<Integer> stack = new ArrayDeque<>();
+13: stack.push(10);   //      ->10
+14: stack.push(4);    //      ->4-->10
+15: stack.peek();     //  4   ->4-->10
+16: stack.poll();     //  4   ->10
+17: stack.poll();     //  10  
+18: stack.peek();     //  null
+```
+
+Lines 13 and 14 successfully put an element on the front/top of the stack. The remaining 
+code looks at the front as well.
+
+When using a `Deque`, it is really important to deternine if it is being used as a FIFO 
+queue, a LIFO stack, or a double-ended queue. 
+
+
+## Using the _Map_ Interface
+
+We use a `Map` when we want to identify values by a key. For example, when we use the 
+contact list of our phone, we look up for a name, rather than to a number. A map is 
+also known as a dictionary in other programing languages.
+
+**Figure 9.8 - Map**
+![Map](map.png)
+
+The main thins that all `Map` class have in common is that they have keys and values. 
+Beyond that, they each offer different functionality, for exemple, a `TreeMap` is 
+sorted. We willl look at each of them.
+
+#### _Map.of()_ and _Map.copyOf()_
+Just like `List` and `Set`, there is a factory method to create a `Map`. We pass any 
+number of pairs of keys and values.
+```
+Map.of("key1", "value1", "key2", "value2");
+```
+
+This is less than ideal since passing k`eys and values is harder to read, because we 
+have to keep track of which parameter is which. The is a better way, `Map` also provides 
+a method that let us supply key/value pairs.
+```
+Map.ofEntries(
+  Map.entry("key1", "value1"),
+  Map.entry("key2", "value2")
+);
+```
+
+Now we can't forget to pass a value. If we leave out a parameter, the `entry()` method 
+won't compile. Conveniently, `Map.copyOf(map)` works just like the `List` and `Set` 
+interface `copyOf()` methods.
+
+
+
+### Comparing _Map_ Implementations
+
+A `HashMap` stores the keys in a hash table. This means that it uses the `hashCode()` 
+method of the keys, normally a `String`, to retrieve their values more efficiently.
+
+The main benefit is that adding elements and retriving the elements by key, both have 
+constant time. The trade-off is that we lose the order in which the elements were 
+inserted. Most of time, we aren't concerned with this in a map. If we were, we could 
+use `LinkedHashMap`.
+
+A `TreeMap` stores the key in a sorted tree structure. The main benefit is that the 
+keys are always in sorted order. Like `TreeSet`, the trade-off is that adding and 
+checking wheter a key is present takes longer as the tree grows larger.
+
+
+### Working with _Map_ Methods
+
+Given that `Map` doesn't extend `Collection`, more methods are specified on the `Map` 
+interface. Since there are both keys and values, we need generic type parameters for 
+both. The class uses `K` for key and `V` for value. The most commom methods are shown 
+on Table 9.6. Some of the method signatures are simplified to make them easier to 
+understand.
+
+**Table 9.6 - Map methods**
+![Map methods](map_methods.png)
+
+While the table is a pretty long list of methods, many of the names are straightforward. 
+Also, many exist as a convenience. For exemple, `containsKey()` can be replaced with 
+`get()` call that check if result is `null`.
