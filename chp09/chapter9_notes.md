@@ -9,6 +9,14 @@ We will discuss the details about Comparator and Comparable. Finally, we will co
 how to create our own classes and methods that use generics so that the same class 
 can be used with many types.
 
+[Common Collections APIs](#using-common-collection-apis)
+[Using List Interface](#using-the-list-interface)
+[Using Set Interface](#using-the-set-interface)
+[Queue and Dequeue Interfaces](#using-the-queue-and-deque-interfaces)
+[Using Map Interface](#using-the-map-interface)
+[Comparing Collection Types]()
+[Sorting Data]()
+[Working with Generics]()
 
 ## Using Common Collection APIs
 
@@ -561,15 +569,17 @@ We also have to notice that on line 18 we clear the original `List`. This does n
 affect either array. The array is a newly created object with no relationship to the 
 origin `List`. It is simply a copy.
 
+[back to top](#chapter-9-collection-and-generics)
+
 
 ## Using the _Set_ Interface
 
 We use a `Set` when we don't want to allow duplicate entries. For example, we might 
 want to keep track of the unique animals that we want to see at the zoo. We aren't 
-concerned with the orde in which we are see these animals, bute there ins't time to 
+concerned with the order in which we are see these animals, bute there ins't time to 
 see them more than once. 
 
-The main thing that all `Set` implementation hava in commom is that they do not allow 
+The main thing that all `Set` implementation have in common is that they do not allow 
 duplicates. We will look at each implementation that we need to know to write code.
 
 **Figure 9.3 - Set
@@ -580,18 +590,18 @@ duplicates. We will look at each implementation that we need to know to write co
 ### Comparing _Set_ Implementations
 
 A `HashSet` stores its elements in a _hash table_, which means the keys are a hash 
-and the values are an `Object`. This means that the `HashSet` uset the `hashCode()` 
-method of the object ot retrive them more efficiently. A valid `hashCode()` doesn't 
+and the values are an `Object`. This means that the `HashSet` uses the `hashCode()` 
+method of the object ot retrieve them more efficiently. A valid `hashCode()` doesn't 
 mean every object will get a unique value, but the method is often written in a way 
-that shash values are spread out over a large rangge to reduce collisions.
+that hashed values are spread out over a large range to reduce collisions.
 
-The main benefit it that addin element and checking whether an element is in the set 
+The main benefit it that adding element and checking whether an element is in the set 
 both have constant time. The trade-off is that we lose the order in which we inserted 
 the elements. Most of the time, we aren't concerned with this in a `Set` anyway, 
 making the `HashSet` the most common set.
 
 A `TreeSet` stores its elements in a sorted tree structure. The main benefit is that 
-the set is always in sorted order. The thade-off is that adding and checking wheter 
+the set is always in sorted order. The trade-off is that adding and checking whether 
 an element exists takes longer that with a `HashSet`, especially as the tree grows 
 larger.
 
@@ -609,7 +619,7 @@ Set<Character> letters = Sef.of("z", "o", "o");
 Set<Character> copy = Set.copyOf(letters);
 ```
 
-These two are the only `Set` especific methods that we need to know. The other methods 
+These two are the only `Set` specific methods that we need to know. The other methods 
 came from `Collection` and the sets behave like the other structures that implements 
 this interface. Let's explore a bit more the differences between tye types of sets, 
 stating with `HashSet`:
@@ -626,15 +636,15 @@ This code prints three lines:
 8
 10
 
-The `add()` method calls is straighforward. The return `true` unless the `Integer` 
+The `add()` method calls is straightforward. The return `true` unless the `Integer` 
 already in the set. Line 6 returns `false`, because we already have 66 in the set, and 
 a se must preserve uniqueness. Line 8 prints the elements of th set in an _arbitrary_ 
-order. In this case, it happens not to be ssorted order or the order in which we added 
+order. In this case, it happens not to be sorted order or the order in which we added 
 the elements.
 
 The `equals()` method of the object is used to determine equality. The `hashCode()` 
 method of the object is used to know in which bucket of a set to look in, so that Java 
-doesn't have to look through the whole set to find out wheter an object is there. The 
+doesn't have to look through the whole set to find out whether an object is there. The 
 best case is that hash codes are unique and Java has to call `equals()` on only one 
 object. The worst case is that all implementations of `hashCode()` return the same 
 value and Java has to call `equals()` on every element ot the set. 
@@ -658,13 +668,15 @@ The elements are printed out in this natural sorted order. Numbers implement the
 `Comparable` interface, whish is used for sorting. Later in this chapter we'll see 
 how to create our own `Comparable` objects.
 
+[back to top](#chapter-9-collection-and-generics)
+
 
 ## Using the _Queue_ and _Deque_ Interfaces
 
 We use a `Queue` when elements area added and removed in a specific order. We can 
-think of a queue as a line. For exemple, when we want to enter a stadium and someone 
-is witing in line, we get in line behind that person. The first person to arrive is 
-the ferst to get out of the line, this originates the "FIFO", first-in, first-out, 
+think of a queue as a line. For example, when we want to enter a stadium and someone 
+is writing in line, we get in line behind that person. The first person to arrive is 
+the first to get out of the line, this originates the "FIFO", first-in, first-out, 
 queue.
 
 A `Deque` (double-ended queue), is different from a regular queue in a way that we 
@@ -673,7 +685,7 @@ A `LinkedList`, in addition to being a `List` it is also a `Deque`, since it imp
 both interfaces. The trade-off is that it isn't as efficient as a "pure" queue. We can 
 use the `ArrayDeque` class is we don't need the `List` methods.
 
-### Working with _Queus_ and _Deque_ Methods
+### Working with _Queue_ and _Deque_ Methods
 
 The `Queue` interface contains six methods, shown in Table 9.3. There are three pieces 
 of functionality and version of the methods that throw an exception or use the return 
@@ -697,8 +709,8 @@ longest to come off the queue. Line 8 checks for the next entry in the queue whi
 leaving it in place.
 
 
-The `Deuque` interface supports double-ended queues, it inherits all `Queue` methods 
-and adds more so, it is clear if we are working with the fron or back of the queue.
+The `Deque` interface supports double-ended queues, it inherits all `Queue` methods 
+and adds more so, it is clear if we are working with the from or back of the queue.
 
 **Table 9.4 - Deque Methods**
 ![Deque methods](deque_methods.png)
@@ -720,18 +732,18 @@ Line 12 show that we use the same class, `LinkedList` to create a `Deque` or a `
 this is a great example of "coding for an interface", _since the reference variable_ 
 _is a Deque_, we create a `Deque` object.
 
-Lines 13 and 14 successfully add an element to the fron and back of the queue. Some 
+Lines 13 and 14 successfully add an element to the from and back of the queue. Some 
 queue are limited in size, which would cause offering an element to the queue to fail. 
-Liine 15 looks at the first element in the queue, but it does not remove it. Lines 16 
-and 17 remove the elements fromt he queue, one from each end. This results in an empty 
+Line 15 looks at the first element in the queue, but it does not remove it. Lines 16 
+and 17 remove the elements from the queue, one from each end. This results in an empty 
 queue. Lines 18 and 19 try to look ate the first element of the queue, resulting in 
 `null`.
 
 
-In addition to FIFO queus, there are LIFO (last-in, first-out) queues, which are commonly 
-refered to as _stacks_, like a stack of plates. We alwasy add or remove from the top 
-of the stack to avoid a mess. We can use the same double-ended queue implementation, 
-_we just change the methods used_!
+In addition to FIFO queues, there are LIFO (last-in, first-out) queues, which are 
+commonly referred to as _stacks_, like a stack of plates. We always add or remove 
+from the top of the stack to avoid a mess. We can use the same double-ended queue 
+implementation, _we just change the methods used_!
 
 **Table 9.5 - Using Deque as a stack**
 ![Deque as stack](stack_methods.png)
@@ -750,22 +762,24 @@ Using the `Deque` as an stack:
 Lines 13 and 14 successfully put an element on the front/top of the stack. The remaining 
 code looks at the front as well.
 
-When using a `Deque`, it is really important to deternine if it is being used as a FIFO 
-queue, a LIFO stack, or a double-ended queue. 
+When using a `Deque`, it is really important to determine if it is being used as a FIFO 
+queue, a LIFO stack, or a double-ended queue.
+
+[back to top](#chapter-9-collection-and-generics)
 
 
 ## Using the _Map_ Interface
 
 We use a `Map` when we want to identify values by a key. For example, when we use the 
 contact list of our phone, we look up for a name, rather than to a number. A map is 
-also known as a dictionary in other programing languages.
+also known as a dictionary in other programming languages.
 
 **Figure 9.8 - Map**
 ![Map](map.png)
 
 The main thins that all `Map` class have in common is that they have keys and values. 
-Beyond that, they each offer different functionality, for exemple, a `TreeMap` is 
-sorted. We willl look at each of them.
+Beyond that, they each offer different functionality, for example, a `TreeMap` is 
+sorted. We will look at each of them.
 
 #### _Map.of()_ and _Map.copyOf()_
 Just like `List` and `Set`, there is a factory method to create a `Map`. We pass any 
@@ -795,21 +809,21 @@ interface `copyOf()` methods.
 A `HashMap` stores the keys in a hash table. This means that it uses the `hashCode()` 
 method of the keys, normally a `String`, to retrieve their values more efficiently.
 
-The main benefit is that adding elements and retriving the elements by key, both have 
+The main benefit is that adding elements and retrieving the elements by key, both have 
 constant time. The trade-off is that we lose the order in which the elements were 
 inserted. Most of time, we aren't concerned with this in a map. If we were, we could 
 use `LinkedHashMap`.
 
 A `TreeMap` stores the key in a sorted tree structure. The main benefit is that the 
 keys are always in sorted order. Like `TreeSet`, the trade-off is that adding and 
-checking wheter a key is present takes longer as the tree grows larger.
+checking whether a key is present takes longer as the tree grows larger.
 
 
 ### Working with _Map_ Methods
 
 Given that `Map` doesn't extend `Collection`, more methods are specified on the `Map` 
 interface. Since there are both keys and values, we need generic type parameters for 
-both. The class uses `K` for key and `V` for value. The most commom methods are shown 
+both. The class uses `K` for key and `V` for value. The most common methods are shown 
 on Table 9.6. Some of the method signatures are simplified to make them easier to 
 understand.
 
@@ -817,5 +831,372 @@ understand.
 ![Map methods](map_methods.png)
 
 While the table is a pretty long list of methods, many of the names are straightforward. 
-Also, many exist as a convenience. For exemple, `containsKey()` can be replaced with 
+Also, many exist as a convenience. For example, `containsKey()` can be replaced with 
 `get()` call that check if result is `null`.
+
+
+### Calling Basic Methods
+
+Let's start comparing the same code with two `Map` types, the first is `HashMap`:
+```
+Map<String, String> map = new HashMap<>();
+map.put("koala", "bamboo");
+map.put("lion", "meat");
+map.put("giraffe", "leaf");
+String food = map.get("koala");     // bamboo
+for (String key : map.keySet())
+  System.out.print(key + ", ");     // koala,giraffe,lion,
+```
+
+Here we use the `put()` method to add key/value pairs to the map and `get()` to get 
+a value given a key. We also use the `keySet()` method to get all the keys.
+
+Java uses the `hashCode()` of the key, in this case a `String`, to determine the order. 
+the order here happens not to be sorted order or the order in which we typed the values.
+
+Now let's look at `TreeMap`:
+```
+Map<String, String> map = new treeMap<>();
+map.put("koala", "bamboo");
+map.put("lion", "meet");
+map.put("giraffe", "leaf");;
+String food = map.get("koala");     // bamboo
+for (String key : map.keySet())
+  System.out.print(key + ",");     // giraffe,koala,lion
+```
+
+`TreeMap` sorts the keys as we would expect. If we called `values()` instead of 
+`keySet()`, the order of the values would correspond to the order of the keys.
+
+With the same map, we can try some boolean checks:
+```
+System.out.println(map.contains("lion"));    // does not compile
+System.out.println(map.containsKey("lion"));     // true
+System.out.println(map.containsValue("lion"));     // false
+System.out.println(map.size());     // 3
+map.clear();
+System.out.println(map.size());     // 0
+System.out.println(map.isEmpty());     // true
+```
+
+The first line is a little tricky. The `contains()` method is on the `Collection` 
+interface, but not on the `Map` interface. The next two lines show that keys and 
+values are checked separately. We can see that there are three key/value pairs in 
+our map. Then we clear out the contents of the map and see that there are zero 
+elements and it is empty.
+
+
+### Iterating through a _Map_
+
+We already set the `forEach()` methods earlier in the chapter. Note that it works a 
+little differently on a `Map`. This time, the lambda used by the `forEach()` method 
+has two parameters: the key and the value. Let's look at an example:
+```
+Map<Integer, Character> map = new HashMap<>();
+map.put(1, 'a');
+map.put(2, 'b');
+map.put(3, 'c');
+map.forEach( (k, v) -> System.out.println(v) );
+```
+
+The lambda has bot the key and value as parameters. It happens to print only the value, 
+but it could do anything with the key and/or value. Interestingly, since we don't care 
+about the key, this particular code could have been written with the `values()` method 
+and a method reference instead.
+```
+map.values().forEach(System.out::println);
+```
+
+Another wa of going through all the data in a map is to get the key/value paris in a 
+`Set`. Java has a static interface inside `Map` called `Entry`. It provides methods 
+to get the key and value of each pair.
+```
+map.entrySet().forEach( e ->
+  System.out.println( e.getKey() + " " + e.getValue() )
+);
+```
+
+
+### Getting Values Safely
+
+The `get()` method returns `null` if the requested key in not in the map. Sometimes 
+we prefer to have a different value returned. Luckily, the `getOrDefault()` method 
+makes this easy. Let's compare the two methods:
+```
+3: Map<Character, String> dict = new HashMap<>();
+4: dict.put('x', "spot");
+5: System.out.println("X marks the " + dict.get('x'));
+6: System.out.println("X marks the " + dict.getOrDefault('x', ""));
+7: System.out.println("Y marks the " + dict.get('y'));
+8: System.out.println("Y marks the " + dict.getOrDefault('y', ""));
+```
+
+This code prints the following:
+```
+X marks the spot
+X marks the spot
+Y marks the null
+Y marks the 
+```
+
+As we can see, line 5 and 6 have the same output because `get()` and `getOrDefault()` 
+behave the same way when the key is present. They return the value mapped by that key. 
+Lines 7 and 8 give different output, showing that `get()` returns `null` when the key 
+is not present. By contrast, `getOrDefault()` returns the empty string we passed as 
+a parameter.
+
+
+### Replacing Values
+
+These methods are similar to the `List` version, except a key is involved:
+```
+21: Map<Integer, Integer> map = new HashMap<>();
+22: map.put(1, 2);
+23: map.put(2, 4);
+24: Integer original = map.replace(2, 10);    // 4
+25: System.out.println(map);     // {1=2, 2=10}
+26: map.replaceAll( (k, v) -> k + v );
+27: System.out.println(map);     // {1=3, 2=12}
+```
+
+Line 24 replaces the values for key 2 and returns the original value. Line 26 
+calls a function and sets the value of each element of the map ot the result of 
+that function. In out case, we added the key and value together.
+
+
+### Putting if Absent
+
+The `putIfAbsent()` method sets a value in the map but skips it if the value is 
+already set to a non-null value.
+```
+Map<String, String> favorites = new HashMap<>();
+favorites.put("Jenny", "Bus Tour");
+favorites.put("Tom", null);
+favorites.putIfAbsent("Jenny", "Tram");
+favorites.putIfAbsent("Sam", "Tram");
+favorites.putIfAbsent("Tom", "Tram");
+System.out.println(favorites);     // {Tom=Tram, Jenny=Bus Tour, Sam=Tram}
+``` 
+
+As we can see, Jenny's value is not updated because on was already present. Sam 
+wasn't there at all, so he was added. Tom was present as a key, but had a `null` 
+value. Therefore, he was set to a non-null value.
+
+
+### Merging Data
+
+The `merge()` method adds logic of what to choose. Suppose we want to choose the 
+ride with the longest name. We can write code to express this by passing a mapping 
+function to the `merge()` method.
+```
+11: BiFunction<String, String, String> mapper = 
+12:     (v1, v2) -> v1.length() > v2.length() ? v1 : v2;
+13:
+14: Map<String, String> favorites = new HashMap<>();
+15: favorites.put("Jenny", "City Bus Tour");
+16: favorites.put("Tom", "Tram");
+17:
+18: String jenny = favorites.merge("Jenny", "Sky-ride", mapper);
+19: String tom = favorites.merge("Tom", "Sky-ride", mapper);
+20:
+21: System.out.println(favorites);     // {Tom=Sky-ride, Jenny=City Bus Tour}
+22: System.out.println(jenny);     // City Bus Tour
+23: System.out.println(tom);      // Sky-ride 
+```
+
+The code on lines 11 and 12 takes two parameters and returns a value. In this case, 
+our implementation returns the one with the longest name. Line 18 call this mapping 
+function, and it sees that "City Bus Tour" is long than "Sky-ride", so it leaves 
+the values as "City Bus Tour". Line 19 call this mapping function again. This time 
+"Tram" is shorter than "Sky-ride", so the map is updated. Line 21 prints out the 
+new map contents. Lines 22 and 23 show that the result is returned from `merge()`.
+
+The `merge()` method also has logic for what happens if `null` values or missing 
+keys are involved. In this case, id doesn't call the `BiFunction` at all, and it 
+simply user the new value.
+```
+BiFunction<String, String, String> mapper = 
+      (v1, v2) -> v1.length() > v2.length() ? v1 : v2;
+Map<String, String> favorites = new HashMap<>();
+favorites.put("Sam", null);
+favorites.merge("Tom", "Sky-ride", mapper);
+favorites.merge("Sam", "Sky-ride", mapper);
+System.out.println(favorites);    // {Tom=Sky-ride, Sam=Sky-ride}
+```
+
+Notice that the mapping function isn't called. If it were, a `NullPointerException` 
+have been raised. The mapping function is used only when there are two actual value 
+to decide between.
+
+The final thing to know about `merge()` is what happens when the mapping function 
+is called and returns `null`. The key is removed from the map when this happens:
+```
+BiFunction<String, String, String> mapper = (v1, v2) -> null;
+Map<String, String> favorites = new HashMap<>();
+favorites.put("Jenny", "Bus Tour");
+favorites.put("Tom", "Bus Tour");
+
+favorites.merge("Jenny", "Sky-ride", mapper);
+favorites.merge("Sam", "Sky-ride", mapper);
+
+System.out.println(favorites);    // {Tom=Bus Tour, Sam=Sky-ride}
+```
+
+"Tom" as left alone since there was no `merge()` call for that key. "Sam" was added 
+since  that key was no in the original list. "Jenny" was removed because the mapping 
+function returned `null`.
+
+**Table 9.7 - Behavior of merge() method**
+![Map merge behavior](map_merge.png)
+
+[back to to](#chapter-9-collection-and-generics)
+
+
+## Comparing Collection Types
+
+Here a review of all the collection classes, we need to memorize this table, since 
+it is short and this will help us a lot when programming.
+
+**Table 9.8 - Java Collections Framework types**
+![Collection types](collection_types.png)
+
+Additionally, we have be capable to describe the types in table 9.9
+
+**Table 9.9 - Collections attributes**
+![Collection attributes](collections_attributes.png)
+
+We have to be capable of distinguish which data structure allow `null` values. The 
+data structures that involve sorting don no allow null values.
+
+We also need to be able to choose the right collection type given a description of 
+a problem. I this case, first thing to do is to identify which type of collection 
+the question is asking about. Figure out whether we are looking for a list, map, 
+queue or set help us to choose the right answer.
+
+### Older Collections
+
+There are a few collections that are no longer on the exam but that we might come 
+across in older code. All three were early Java data structures we could use with 
+threads:
+* `Vector`: implements `List`
+* `Hashtable`: Implements `Map`
+* `Stack`: implements `Queue`
+
+These classes are rarely use anymore, as there are much better concurrent alternatives 
+that will be cover in Chapter 13.
+
+
+[back to top](#chapter-9-collection-and-generics)
+
+
+## Sorting Data
+
+We discussed "order" for the `TreeSet` and `TreeMap` classes. For number, order is 
+obvious -- it is numerical order. For `String` objects, order is defined according 
+to the Unicode character mapping. 
+
+_Numbers before letters, and uppercase letters before lowercase letters_
+
+We use `Collections.sort()` to sort any type of collection involving the this data 
+types Tt return void because is the method parameter that is what get sorted. 
+
+We can also sort objects that we create. Java provides an interface called `Comparable`, 
+if out class implements `Comparable`, it can be used in data structures that requires 
+comparison. There is also a class called `Comparator`, which is used to specify that 
+we want to use a different order than the object itself provides.
+
+### Creating a _Comparable_ Class
+
+The `Comparable` interface has only one method. In fact, this it the entire interface: 
+```
+public interface Comparable<T> {
+  int compareTo(T o);
+}
+```
+
+The generic `T` let us implement this method and specify the type of our object. 
+This lets us avoid a cast when implementing `compareTo()`. Any object can be 
+comparable. For example, whe have a bunch of ducks and want to sort them by name. 
+First, we update the class declaration to inherit `Comparable<Duck>`, and then we 
+implement the `compareTo()` method.
+```
+import java.util.*;
+public class Duck implements Comparable<Duck> {
+  private String name;
+
+  public Duck(String name) {
+    this.name = name;
+  }
+
+  public String toString() {     // need to be something readable
+    return name;
+  }
+
+  public int compareTo(Duck other){
+    return name.compareTo(other.name);    // sorts ascending by name
+  }
+
+  public static void main(String[] args) {
+    var ducks = new ArrayList<Duck>();
+    ducks.add(new Duck("Quack"));
+    ducks.add(new Duck("Puddles"));
+    Collections.sort(ducks);    // sort by name
+    System.out.println(ducks);    // [Puddles, Quack]
+  }
+}
+```
+
+Without implementing that interface, all we have is a method named `compareTo()`, but 
+it wouldn't be a `Comparable` object. We could also implement `Comparable<Object>` or 
+some other class for `T`, but this wouldn't be as useful for sorting a group of `Duck` 
+objects.
+
+Finally, the `Duck` class implements `compareTo()`. Since `Duck` is comparing objects 
+ot type `String` and the `String`  class already has a `compareTo()` method, it can 
+just delegate.
+
+We still need to know what the `compareTo()` method returns so that we can write our 
+own implementation. There are three rules to know:
+- the number 0 is return when  the current object is equivalent to the other
+- a negative number is returned when the current object is smaller than the other
+- a positive number is returned when the current object is larger than the other
+
+Let's look at an implementation of `compareTo()` that compares numbers instead of 
+String objects:
+```
+01: public class Animal implements Comparable<Animal> {
+02:   private int id;
+03:
+04:   public int compareTo(Animal a) {
+05:     return id - a.id;      // sorts ascending by id
+06:   }
+07:
+08:   public static void main(String[] args) {
+09:     var a1 = new Animal();
+10:     var a2 = new Animal();
+11:
+12:     a1.id = 5;
+13:     a2.id = 7;
+14: 
+15:     System.out.println(a1.compareTo(a2));     // -2
+16:     System.out.println(a1.compareTo(a1));     // 0
+17:     System.out.println(a2.compareTo(a1));     // 2
+18:   }
+19: }
+```
+
+Lines 9 and 10 creates two `Animal` objects. Lines 12 and 13 set their `id` 
+values. Lines 4 to 6 shows on way to compare two `int` values. We could have 
+used `Integer.compare(id, a.id)` instead. Is good to know recognizes the two 
+approaches.
+
+Lines 15 to 17 confirm that we've implemented `compareTo()` correctly. Line 15 
+compares a smaller `id` to a larger one, and therefore it prints a negative number. 
+Line 16 compares animals with the same `id`, and therefore it prints 0. line 17 
+compares a larger `id` to a smaller one, and therefore it return a positive number.
+
+
+### Casting the _compareTo()_ Argument
+
+
+
