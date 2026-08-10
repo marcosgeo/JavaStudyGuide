@@ -14,8 +14,8 @@ can be used with many types.
 [Using Set Interface](#using-the-set-interface)
 [Queue and Dequeue Interfaces](#using-the-queue-and-deque-interfaces)
 [Using Map Interface](#using-the-map-interface)
-[Comparing Collection Types]()
-[Sorting Data]()
+[Comparing Collection Types](#comparing-collection-types)
+[Sorting Data](#sorting-data)
 [Working with Generics]()
 
 ## Using Common Collection APIs
@@ -1198,5 +1198,123 @@ compares a larger `id` to a smaller one, and therefore it return a positive numb
 
 ### Casting the _compareTo()_ Argument
 
+When dealing with legacy code or dcode that does not use generics, the `compareTo()` 
+method requires a cast, since the argument is passed as an `Object`.
+```
+public class LegacyDuck implements Comparable {
+  private String name;
+  public int compareTo(Object other) {
+    LegacyDuck d = (LegacyDuck) other;     // cast because no generics
+    return name.compareTo(d.name);
+  }
+}
+```
 
+Since we don't specify a generic type for `Comparable`, Java assumes that we want 
+an `Object`, which means that we have to cast to `LegacyDuck` before accessing the 
+instance variables on it.
+
+
+### Checking for _null_
+
+When working witn `Comparable` and `Comparator`, until now, we tend to assume the 
+data has values, but this is not always the case. Whe writing our own compare methods, 
+we should check the data before comparing it if it is not validated ahead of time.
+```
+public class MissingDuck implements Comparable<MissingDuck> {
+  private String name;
+  public int compareTo(MissingDuck quack) {
+    if (quack == null)
+      throw new IllegalArgumentException("Poorly formed duck!");
+    if (this.name == null && quack.name == null)
+      return 0;
+    else if (this.name == null) return -1;
+    else if (quack.name == null) return 1;
+    else return name.compareTo(quack.name);
+  }
+}
+```
+
+This method throws an exception if it is passed a `null` `MissingDuck` object. What 
+about the ordering? If t`he `name` of a duck is `null`, it's sorted first.
+
+
+### Keeping _compareTo()_ and _equals()_ Consistent
+
+If we write a class that implements `Comparable`, we introduce new business logic 
+for determining equality. The `compareTo()` method returns `0` if two objects are 
+equal, while our `equals()` method returns `true` if two objects are equal. A 
+_natural ordering_ that uses `compareTo()` is said to be _consistent with equals_ 
+if, and only if, `x.equals(y)` is `true` whenenver `x.compareTo(y)` equals `0`.
+
+Similarly, `x.equals(y)` must be `false` whenenver `x.compareTo(y)` is not `0`. We 
+are strongly encouraged to make our `Comparable` classes consistent with `equals` 
+because not all collection classes behave predictably if the `compareTo()` and 
+`equals()` methods are not consistent.
+
+For example, the flollowing `Product` class defines a `compareTo()` method that is 
+not ocnsistent with `equals()`:
+```
+public class Product implements Comparable<Product> {
+  private int id;
+  private String name;
+
+  public int hashCode() { return id; }
+
+  public boolean equals(Object obj) {
+    if (!(obj instanceof Product)) return false
+    var other = (Product) obj;
+    return this.id == other.id
+  }
+
+  public int compareTo(Product obj) {
+    return this.name.compareTo(obj.name);
+  }
+}
+```
+
+We might be sorting `Product` objects by name, but names are not unique. The 
+`compareTo()` method does not have be be consistent with `equals()`. One way to 
+fix  that is to use a `Comparator` to define the sort elsewhere.
+
+
+### Comparing Data with a _Comparator_
+
+Sometimes we want to sort an object that did not implement `Comparable`, or we want 
+to sort object in different ways at different times. Suppose that we add weight to 
+our `Duck` class. We now have the following:
+```
+01: import java.util.ArrayList;
+02: import java.util.Collections;
+03: import java.util.Comparator;
+04:
+05: public class Duck implements Comparable<Duck> {
+06:   private String name;
+07:   private int weight;
+08:
+09:   // assume getters, setters and constructors are provided
+10:
+11:   public string toString() { return name; }
+12:
+13:   public int compareTo(Duck d) {
+14:     return name.compareTo(d.name);
+15:   }
+16:
+17:   public static void main(String[] args) {
+18:     Comparator<Duck> byWeight = new Comparator<Duck>() {
+19:       public int compare(Duck d1, Duck d2) {
+20:         return d1.getWeight() - d2.getWeight();
+21:       }
+22:     };
+23:
+24:     var ducks = new ArrayList<Duck>();
+25:     ducks.add(new Duck("Quack", 7));
+26:     ducks.add(new Duck("Puddles", 10));
+27:     Collections.sort(ducks);
+28:     System.out.println(ducks);     // [Puddles, Quack]
+29:     Collections.sort(ducks, byWeight);
+30:     System.out.prinln(ducks);     // [Quack, Puddles]
+31:   }
+31: }
+```
 
