@@ -1313,8 +1313,126 @@ our `Duck` class. We now have the following:
 27:     Collections.sort(ducks);
 28:     System.out.println(ducks);     // [Puddles, Quack]
 29:     Collections.sort(ducks, byWeight);
-30:     System.out.prinln(ducks);     // [Quack, Puddles]
+30:     System.out.println(ducks);     // [Quack, Puddles]
 31:   }
-31: }
+32: }
 ```
+
+First, note that `Comparator` is in a different package than `Comparable`, and we 
+find `Comparable` in `java.lang` and `Comparator` not, meaning we can use `Comparable` 
+without an import statement.
+
+The `Duck` class itself can define only one `compareTo()` method. In this case, `name` 
+was chosen. If we want to sort by something else, we have to define that sort order 
+outside the `compareTo()` method using a separate class or lambda expression.
+
+Lines 18 to 22 of the `main()` method show how to define a `Comparator` using an inner 
+class. On lines 27 to 30, we sort without the `Comparator` and then with the `Comparator` 
+to see the difference in the output.
+
+`Comparator` is a functional interface since there is only one abstract method to 
+implement. This means that we can rewrite the `Comparator` on lines 18 to 22 using 
+a lambda expression, as shown below:
+```
+Comparator<Duck> byWeight = (d1, d2) -> d1.getWeight - d2.getWight();
+```
+
+Alternatively, we can use a method reference and a helper method to specify that we 
+want to sort by weight.
+```
+Comparator<Duck> byWeight = Comparator.comparing(Duck::getWeight);
+```
+
+In this example, `Comparator.comparing()` is a static interface method that creates 
+a `Comparator` given a lambda expression or method reference. This is a convenience 
+that Java gives us.
+
+
+#### Is _Comparable_ a Functional Interface?
+
+Was said that `Comparator` is a functional interface because it has a single abstract 
+method. `Comparable` is also a functional interface since it also has a single abstract 
+method. However, using a lambda for `Comparable` would be silly. The point of `Comparable` 
+is to implement it inside the object being compared.
+
+
+### Comparing _Comparable_ and _Comparator_
+
+There are several differences between `Comparable` and `Comparator`, the Table 9.10 
+listed them for us:
+
+**Table 9.10 - Comparable x Comparator**
+![Comparable vs Comparator](comparable_x_comparator.png)
+
+As always, memorize this table is a must. Let's try to see why this doesn't compile:
+```
+var byWeight = new Comparator<Duck>() {     // does not compile
+  public int compareTo(Duck d1, Duck d2) {
+    return d1.getWeight() - d2.getWeight();
+  }
+}
+```
+
+The method name is wrong. A `Comparator` must implement a method named `compare()`. 
+We must pay special attention to method names and the number of parameters when we 
+see `Comparator` and `Comparator` being used.
+
+
+### Comparing Multiple Fields
+
+When writing a `Comparator` that compares multiple instance variables, the code gets 
+a little messy. Suppose that we have a `Squirrel` class, as shown:
+```
+public class Squirrel {
+  private int weight;
+  private String species;
+
+  // assume getters, setters, and constructors
+}
+```
+
+We want to write a `Comparator` to sort by species name. If two squirrels are from 
+the same species, we want to sort the on the weights the least first. We could do 
+this with code that looks like this:
+```
+public class MultiFieldComparator implements Comparator<Squirrel> {
+  public compare(Squirrel s1, Squirrel s2) {
+    int result = s1.getSpecies().compareTo(s2.getSpecies());
+    if (result != 0) return result;
+    return s1.getWeight() - s2.getWeight();
+  }
+}
+```
+
+This works assuming no `species` attribute are `null`. It checks on field, If they 
+don't match, we are finished sorting. If the do match, it looks at the next field.
+This isn't easy to read, though. It is also easy to get wrong. Changing `!=` to `==` 
+breaks the sort completely.
+
+Alternatively, we can use method references and build the `Comparator`. This code 
+represent logic for the same comparison:
+```
+Comparator<Squirrel> c = Comparator.comparing(Squirrel::getSpecies)
+    .thenComparingInt(Squirrel::getWeight);
+```
+
+This time, we chain the methods. First we create a `Comparator` on `species` ascending. 
+Then, if there is a tie, we sort by weight. We can also sort in descending order. 
+Some methods on `Comparator`, like `thenComparingInt()`, are default methods.
+
+Suppose we want to sort in descending order by species:
+```
+var c = Comparator.comparing(Squirrel::getSpecies).reversed();
+```
+
+Table 9.11 shows the helper methods that we should know for building a `Comparator`. 
+The parameters types are omitted to help us focus on the methods. They use many of 
+the functional interfaces that we learned in the previous chapter.
+
+**Table 9.11 - helper static methods for building a Comparator**
+![methods for comparator](comparator_methods_for_build.png)
+
+
+
+
 
