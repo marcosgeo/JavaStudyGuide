@@ -1058,11 +1058,13 @@ Here a review of all the collection classes, we need to memorize this table, sin
 it is short and this will help us a lot when programming.
 
 **Table 9.8 - Java Collections Framework types**
-![Collection types](collection_types.png)
+
+![Collection types](collections_types.png)
 
 Additionally, we have be capable to describe the types in table 9.9
 
 **Table 9.9 - Collections attributes**
+
 ![Collection attributes](collections_attributes.png)
 
 We have to be capable of distinguish which data structure allow `null` values. The 
@@ -1429,10 +1431,142 @@ Table 9.11 shows the helper methods that we should know for building a `Comparat
 The parameters types are omitted to help us focus on the methods. They use many of 
 the functional interfaces that we learned in the previous chapter.
 
-**Table 9.11 - helper static methods for building a Comparator**
+**Table 9.11 - Helper static methods for building a Comparator**
 ![methods for comparator](comparator_methods_for_build.png)
 
 
+**Table 9.12 - Helper default methods for building a Comparator**
+![default methods for comparator](compararator_def_meth_for_build.png)
+
+
+In the examples so far we often ignore `null` values in checking equality and comparing 
+objects. In the real world, though, things aren't so neat. We will have to decide how 
+to handle `null` values or prevent them from being in our object.
+
+
+### Sorting and Searching
+
+Now that we've learned all about Comparable and Comparator, we can finally do something 
+useful with them, like sorting. The `Collections.sort()` method uses the `compareTo()`
+method to sort. It expects the object to be sorted to be `Comparable`.
+```
+05: public static SortRabbits {
+06:   static record Rabbit(int id) {}
+07:   public static void main(String[] args) {
+08:     List<Rabbit> rabbits new ArrayList<>();
+09:     rabbits.add(new Rabbit(3));
+10:     rabbits.add(new Rabbit(1));
+11:     Collection.sort(rabbits);     // does not compile
+12:   }
+13: }
+``` 
+
+Java knows that the `Rabbit` record is not `Comparable`. It knows sorting will fails, 
+so it doesn't even let the code compile. We can fix this by passing a `Comparator` 
+to `sort()`. Remembering that a `Comparator` is useful when we want to specify sort 
+order without using a `compareTo()` method.
+```
+11:   Comparator<Rabbit> c = (r1, r1) -> d1.id - r2.id;
+12:   Collections.sort(rabbits, c);
+13:   System.out.println(rabbits);     // [Rabbit[id=1], Rabbit[id=3]]
+```
+
+If we want to sort the rabbits in descending order, we could change the `Comparator` 
+to `r2.id - r1.id`. Alternatively, we could reverse the contents of the list after-
+ward:
+```
+11:   Comparator<Rabbit> c = (r1, r2) -> r1.id - d2.id;
+12:   Collections.sort(rabbits, c);
+13:   Collections.reverse(rabbits);
+14:   System.out.println(rabbits);     // [Rabbit[id=3], Rabbit[id=1]]
+```
+
+The `sort()` and `binarySearch()` methods allow us to pass in a `Comparator` object 
+whe we don't want to use the natural order.
+
+---
+#### Reviewing _binarySearch()_
+
+The `binarySearch()` method requires a sorted `List`.
+```
+11: List<Integer> list = Arrays.asList(6, 9, 1, 8);
+12: Collections.sort(list);    // [1, 6, 8, 9]
+13: System.out.println(Collections.binarySearch(list, 6));    // 1
+14: System.out.println(Collections.binarySearch(list, 3));    // -2
+```
+
+Line 12 sorts the `List` so we can call binary search properly. Line 13 prints the 
+index at which a match is found. Line 14 prints on les than the negated index of where 
+the requested value would need to be inserted. The number 3 would need to be inserted 
+at index 1 (after the number 1 but before number 6). Negating that gives us -1, and 
+subtracting 1 gives us -2.
+
+---
+
+There is a trick in working with `binarySearch()`. What will be the output of de code:
+```
+3: var names = Arrays.asList("Fluffy", "Hoppy");
+4: Comparator<String> c = Comparator.reverseOrder();
+5: var index = Collection.binarySearch(name, "Hoppy", c);
+6: System.out.println(index);
+```
+
+The answer happens to be -1. We don't need to know that the answer is -1. We need to 
+know that _the answer is not defined_. Line 3 create a list, [Fluffy, Hoppy]. This 
+list happens to be sorted in ascending order. Line 4 creates a Comparator that reverses 
+the natural order. Line 5 requests a binary search in descending order. Since the list 
+is not in that order, we don't meet the precondition for doing a search.
+
+While the result of calling `binarySearch()` on an improperly sorted list is undefined, 
+sometimes we can get lucky. For example, search starts in a middle of an odd-numbered 
+list. If we happen to ask for the middle element, the returned index will be what we 
+expect.
+
+Earlier in this chapter we saw collection that require classes to implement `Comparable`. 
+Unlike sorting, they don't check that we have implemented `Comparable` at compile time.
+
+Going back to the `Rabbit` that does not implement `Comparable`, we try to add it to 
+a `TreeSet`:
+```
+02: public class UseTreeSet{
+03:   static class Rabbit{ int id; }
+04:   public static void main(String[] args) {
+05:     Set<Duck> ducks = new TreeSet<>();
+06:     ducks.add(new Duck("Puddles"));
+07:
+08:     Set<Rabbit> rabbits = new TreeSet<>();
+09:     rabbits.add(new Rabbit());     // ClassCastException
+10:   }
+11: }
+```
+
+Line 6 is fine. `Duck` does implement `Comparable`. `TreeSet` is able to sort it into 
+the proper position in the set. Line 9 is a problem. When `TreeSet` tries to sort it, 
+Java discovers the fact that `Rabbit` does not implement `Comparable`. Java throws an 
+exception like this:
+```
+Exception in thread "main" java.lang.ClassCastException:
+  class Rabbit cannot be cast to class java.lang.Comparable
+```
+
+It may seem weird for this exception to be thrown when the first object is added to 
+the set. After all, there is nothing to compare yet. Is a matter of consistency that 
+Java works this way. 
+
+Just like searching and sorting, we can tell collection that require sorting that we 
+want to use a specific `Comparator`. For example:
+```
+08:     Set<Rabbit> rabbits = new TreeSet<>( (r1, r2) -> r1.id - r2.id);
+09:     rabbits.add(new Rabbit())
+```
+
+Now Java knows that we want to sort by id, and all is very well. A `Comparator` is a 
+helpful object. It lets us separate sort order from the object to be sorted. Notice 
+that the line 9 in both of the previous examples is the same. It's the declaration of 
+the `TreeSet` that has changed.
+
+
+### Sorting a list
 
 
 
