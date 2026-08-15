@@ -16,7 +16,7 @@ can be used with many types.
 [Using Map Interface](#using-the-map-interface)
 [Comparing Collection Types](#comparing-collection-types)
 [Sorting Data](#sorting-data)
-[Working with Generics]()
+[Working with Generics](#working-with-generics)
 
 ## Using Common Collection APIs
 
@@ -1567,6 +1567,547 @@ the `TreeSet` that has changed.
 
 
 ### Sorting a list
+
+While we can call `Collections.sort(list)`, we can also sort directly on the list object:
+```
+3: List<String> bunnies = new ArrayList<>();
+4: bunnies.add("long ear");
+5: bunnies.add("floppy");
+6: bunnies.add("hoppy");
+7: System.out.println(bunnies);     // [long ear, floppy, hoppy]
+8: bunnies.sort( (b1, b2) -> b1.compareTo(b2));
+9: System.out.println(bunnies);     // [floppy, hoppy, long ear]
+```
+
+On line 8, we sort the list alphabetically. The `sort()` method takes a `Comparator` 
+that provides the sort order. Remembering that `Comparator` takes two parameters and 
+return an `int`.
+
+There is not a sort method on `Set` or `Map`. Both of those types are unordered, so 
+it wouldn't make sense to sort them.
+
+[back to top](#chapter-9-collection-and-generics)
+
+
+## Working with Generics
+
+Why do we need generics? Imagine if we weren't specifying the type of the list and 
+merely hoped the caller didn't pub in something that we didn't expect. The following 
+does just that:
+```
+14: static void printNames(List lit) {
+15:   for (int i = 0; i < list.size(); i++) {
+16:     String name = (String) list.get(i);     // ClassCastException
+17:     System.out.println(name);
+18:   }
+19: }
+20: public static void main(String[] args) {
+21:   List names = new ArrayList();
+22:   names.add(new StringBuilder("Webby"));
+23:   printNames(names);
+24: } 
+```
+
+This code throws a `ClassCastException`. Line 22 adds a `StringBuilder` to `names`. 
+This is legal because a non-generic list can contain anything. However, line 16 is 
+written to expect a specific class to be in there. It casts to a `String`, reflecting 
+this assumption. Since the assumption is incorrect, the code throws a exception that 
+`java.lang.StringBuilder` cannot be cast to `java.lang.String`.
+
+Generics fix this by allowing we to write and use parameterized types. Since we specify 
+that we want an `ArrayList` of `String` objects, the compiles has enough information to 
+prevent this problem in the first place.
+```
+List<String> names = new ArrayList<String>();
+names.add(new StringBuilder("Webby"));     // does not compile
+```
+
+Getting a compiler error id good. We will know right away that something is wrong rather 
+than hoping to discover it later.
+
+
+### Creating Generic Classes
+
+We can introduce generics into our own classes. The syntax for introducing a generic 
+is to declare a _formal type parameter_ in angle brackets, `<>`, or diamond operator.
+The following class named `Transport` has a generic type variable declared after the 
+name of the class:
+```
+public class Transport<U> {
+  private U contents;
+  public U lookInTransport() {
+    return contents;
+  }
+  public void packTransport(U content) {
+    this.contents = content;
+  }
+}
+```
+
+The generic type `U` is available anywhere within the `Transport` class. When we 
+instantiate the class, we tell the compiler what `U` should be for that particular 
+instance.
+
+---
+**Naming Conventions for Generics**
+
+A type parameter can be named anything we want. The convention is to use single upper 
+case letter to make it obvious that the aren't real class names. The following are 
+common letter to use:
+- E for an element
+- K for a map key
+- V for a map value
+- N for a number
+- T for a generic data type
+- S, U, V, ... for multiple generic types
+
+---
+
+Suppose an `Elephant` class exist and we are moving our elephant to a new and larger 
+enclosure area:
+```
+Elephant elephant = new Elephant();
+Transport<Elephant> transportForElephant = new Transport<>();
+transportForElephant.packTransport(elephant);
+Elephant inNewHome = transportForElephant.lookInTransport();
+```
+
+What if we wanted to transport another animal?
+```
+Transport<Zebra> transportForZebra = new Transport<>();
+```
+
+And if we have a robot?
+```
+Robot joeBot = new Robot();
+Transport<Robot> robotTransport = new Transport<>();
+robotTransport.packTransport(joeBot);
+
+// ship for a far away land
+Robot atDestination = robotTransport.lookInTransport();
+```
+
+Generic class become useful when the classes used as tye type parameter can have 
+absolutely nothing to do with each other. The `Transport` class works with any type 
+of class. Before generics, we would have needed `Transport` to use the `Object` class 
+for its instance variable, which would have put the burden on the caller to cast the 
+object it receives on emptying the transport.
+
+In addition to `Transport` not needing to know about the objects that go into it, 
+those objects don't need to know about `Transport`. We aren't requiring the objects 
+to implement an interface named Transportable or something like. A class can be put 
+in the `Transport` without any changes at all.
+
+Generic class aren't limited to having a single type parameter, This class show two 
+generic parameters:
+```
+public class SizeLimitedTransport<T, U> {
+  private T contents;
+  private U sizeLimit;
+  public SizeLimitedTransport(T contents, U sizeLimit) {
+    this.contents = contents;
+    this.sizeLimit = sizeLimit;
+  }
+}
+```
+
+`T` represents the type that we are transporting. `U` represents the unit that we are 
+using to measure the maximum size for the transport. To use this generic class, we can 
+write the following:
+```
+Elephant elephant = new Elephant();
+Integer pounds = 15_000;
+SizeLimitedTransport<Elephant, Integer> t1 = new SizeLimitedTransport<>(elephant, pounds);
+```
+
+Here we specify that tye type is `Elephant`, and the unit is `Integer`. We also throw 
+in a reminder that numeric literals can contain underscores.
+
+
+### Understanding Type Erasure
+
+Specifying a generic type allows the compiler to enforce proper use of the generic 
+type. For example, specifying the generic type fo `Transport` as `Robot` is like 
+replacing the `U` in the `Transport` class with `Robot`. However, this is just for 
+compile time.
+
+Behind the scenes, the compiler replaces all references to `U` in `Transport` with 
+`Object`. In other words, after the code compiles, our generics are just `Object` 
+types. The `Transport` class looks like the following at runtime:
+```
+public class Transport {
+  private Object contents;
+  public Object lookInTransport() {
+    return contents;
+  }
+  public void packTransport(Object content) {
+    this.contents = content;
+  }
+}
+```
+
+This means there is only one class file. There aren't different copies for different 
+parameterized types. This process of removing he generics syntax from our code is 
+referred to as _type erasure_. Type erasure allows our code to be compatible with 
+older version of Java that do not contain generics.
+
+The compiler add the relevant cast for our code to work with this type of erased class.
+For example, we type the following:
+```
+Robot r = transp.lookInTransport();
+```
+
+The compiler turns it into the following:
+```
+Robot r = (Robot) transp.lookInTransport();
+```
+
+In the next sections the implications of generics for method declarations are discussed.
+
+
+### Overloading a Generic Method
+
+Only one of these tow methods is allowed in a class because type erasure will reduce 
+both sets of arguments to (`List input`):
+```
+public class LongTailAnimal {
+  protected void chew(List<Object> input) {}
+  protected void chew(List<Double> input) {}     // does not compile
+}
+```
+
+For the same reason, we also can't overload a generic method from a parent class.
+```
+public class LongTailAnimal {
+  protected void chew(List<Object> input) {}
+}
+
+public class Anteater extends LongTailAnimal {
+  protected void chew(List<Double> input) {}     // does not compile
+}
+```
+
+Both of these examples fail to compile because of type erasure. In the compiled form, 
+the generic type is dropped, and it appears as an invalid overloaded method. Now an
+intriguing example:
+```
+public class Anteater extends LongTailAnimal {
+  protected void chew(List<Object> input) {}
+  protected void chew(ArrayList<Double> input) {}
+}
+```
+
+The first `chew()` method compiles because it uses the same generic type in the 
+overridden method as the one defined in the parent class. The second `chew()` 
+method compiles as well. However, it is an overloaded method because on of the 
+method arguments is a `List` and the other is an `ArrayList`. When working with 
+generic methods, it's important to consider the underlying type.
+
+
+### Returning Generic Types
+
+When we are working with overridden methods that return generics, the return values 
+must be covariant. In terms of generics, this means that the return type of the class 
+or interface declared in the overriding method must be a subtype of the class defined 
+in the parent class. The generic parameter type must match its parent's type exactly.
+
+Given the following declaration for the `Mammal` class, which of the two subclasses, 
+`Monkey` or `Goat`, compile?
+```
+public class Mammal {
+  public List<CharSequence> play() { ... }
+  public CharSequence sleep() { ... }
+}
+
+public class Monkey extends Mammal {
+  public ArrayList<CharSequence> play() { ... }
+}
+
+public class Goat extends Mammal {
+  public List<String> play() { ... }      // does not compile
+  public String sleep() { ... }
+}
+```
+
+The `Monkey` class compiles because `ArrayList` is a subtype of `List`. The `play()` 
+method in the `Goat` class does not compile, though. For the return types to be 
+covariant, the generic type parameter must match. Even though `String` is a subtype 
+of `CharSequence`, it does not exactly match the generic type defined in the `Mammal` 
+class. Therefore, this is considered an invalid override.
+
+The `sleep()` method in the `Goat` class does compile since `String` is a subtype of 
+`CharSequence`. This example shows that covariance applies to tye return type, just 
+not the generic parameter type.
+
+It might be helpful for us to apply type erasure to question involving generics to 
+ensure that the compile properly. Once we've determined which methods are overridden 
+and which are being overloaded, we should work backward, making sure the generic 
+types match for overridden methods. And remembering, generic methods cannot be 
+overloaded by changing the generic parameter type only.
+
+
+### Implementing Generic Interfaces
+
+Just like a class, an interface can declare a forma type parameter. For example, the 
+following `Shippable` interface uses a generic type as the argument to its `ship()` 
+method:
+```
+public interface Shippable<T> {
+  void ship(T t);
+}
+```
+
+There are three ways a class can approach implementing this interface. The first is 
+to specify the generic type in the class. The following concrete class says that it 
+deals  only with robots. This lets it declare the `ship()` method with a `Robot` 
+parameter:
+```
+class ShippableRobotTransport implements Shippable<Robot> {
+  public void ship(Robot t) { }
+}
+```
+
+The next way is to create a generic class. The following concrete class allows the 
+caller to specify the type of the generic:
+```
+class ShippableAbstractTransport<U> implements Shippable<U> {
+  public void ship(U t) { }
+}
+```
+
+The final way is to not use generics at all. This is the old way of writing code. 
+It generates a compiler warning about `Shippable` being a _raw type_, but it does 
+compile. Here the `ship()` method has an `Object` parameter since the generic type 
+is not defined:
+```
+class ShippableTransport implements Shippable {
+  public void ship(Object t) { }
+}
+```
+
+---
+**What We Can't Do with Generic Type**
+
+There ara some limitation on what we can do with a generic type. Most of the limitations 
+are due to type erasure. Oracle refers to type whose information is fully available at 
+runtime as _reifiable_ (capable of being reified, i.e., treated or made real from an 
+abstract idea). Reifiable types can do anything that Java allows. Non-reifiable types 
+have some limitations.
+
+Here are the things that we can't do with generics (and by "can't" we mean without 
+resorting to contortions like passing in a class object):
+- **Call a constructor**: writing `new T()` is not allowed because at runtime, it would 
+  be `new Object()`.
+- **Create an array of that generic type**: this is the most annoying, but it makes 
+  sense becaus we'd be creating an array of `Object` values.
+- **Call instanceof**: this is not allowed because at runtime `List<Integer>` and 
+  `List<String>` look the same to Java, because of of type erasure.
+- **Use a primitive type as a generic type parameter**: this isn't a big deal because we 
+  can use the wrapper class instead. If we want a type of `int`, we just use `Integer`.
+- **Create a static variable as a generic type parameter**: this is not allowed because 
+  the type is linked to the instance of the class.
+---
+
+### Writing Generic Methods
+
+Up until this point, we've seen formal type parameter declared on the class or interface 
+level. It is also possible to declare them on the method level. This is often useful for 
+static methods since they aren't part of an instance that can declare the type. However, 
+it is also allowed on non-static methods.
+
+In this example, both methods use a generic parameter:
+```
+public class Handler {
+  public static <T> void prepare(T t) {
+    System.out.println("Preparing " + t);
+  }
+  public static <T> Transport<T> ship(T t) {
+    System.out.println("Shipping " + t);
+    return new Transport<T>();
+  }
+}
+```
+
+The method parameter is the generic type `T`. Before the return type, we declare the 
+_formal type parameter_ with `<T>`. In the `ship()` method, we show how we can use the 
+generic parameter in the return type, `Transport<T>`, for the method. 
+
+Unless a method is obtaining the generic formal type parameter from the class/interface, 
+it is specified immediately before the return type of the method, to be clear:
+```
+                       ;-- formal parameter
+                      /
+  public     static <T>     Transport<T>      ship(T t)
+/________/  /___________/  /____________/  /____________/
+    /            /               /                /
+access     generic method   return type    method name and
+modifier    declaration                      parameters
+
+```
+
+This can lead to some interesting-looking code!
+```
+2: public class More {
+3:   public static <T> void sink(T t) { }
+4:   public static <T> T identity(T t) { return t; }
+5:   public static T noGood(T t) { return t; }     // does not compile  
+6: }
+```
+
+Line 3 shows the formal parameter type immediately before the return type of `void`. 
+Line 4 shows the return type being the formal parameter type. It looks weird, but is 
+correct. Line 5 omits the formal parameter type and therefore does not compile.
+
+---
+**Optional Syntax for Invoking a Generic Method**
+
+We can call a generic method normally, and the compiler will try to figure out which 
+one we want. Alternatively, we can specify the type explicitly to make it obvious what 
+the type is:
+```
+Box.<String>ship("package");
+Box.<String[]>ship(args);
+```
+
+It is up to us whether this makes things clearer. We should at least be aware that 
+this syntax exists.
+---
+
+When we have a method that declare a  generic parameter type, it is independent of 
+the class generics. Let's take a look at this class that declares a generic `T` at 
+both levels:
+```
+1: public class TrickyTransport<T> {
+2:   public <T> T tricky(T t) {
+3:     return t;
+4:   }
+5: }
+```
+
+Is possible figure out the type of `T` on lines 1 and 2 when we call the `TrickTransport` 
+class in this code:
+```
+10: public static String createName() {
+11:   TrickTransport<Robot> transp = new TrickTransport<>();
+12:   return transp.tricky("bot"); 
+13: }
+```
+
+On line 1, `T` is `Robot` because that is what gets referenced when constructing a 
+`Transport`. On line 2, `T` is `String` because that is what is passed to the method. 
+Whe we see code like this, we have to take a deep breath and write down what is 
+happening so we don't get confused.
+
+
+### Creating a Generic Record
+
+Generics can also be used with records. This record takes a single generic type 
+parameter:
+```
+public record CreateRecord<T>(T contents) {
+  @Override
+  public T contents() {
+    if (contents == null)
+      throw new IllegalStateException("missing contents");
+    return contents;
+  }
+}
+```
+
+This works the same way as classes. We can create a record or the robot!
+```
+Robot robot = new Robot();
+CreateRecord<Robot> record = new CreateRecord<>(robot);
+```
+
+This is convenient. Now we have an immutable, generic record!
+
+
+### Bounding Generic Types
+
+By now, we might think that generics ton't seem particularly useful since they are 
+treated as `Object` and, therefore, don't have many methods available. Bounded 
+wildcards solve this by restricting what types can be used in a generic. A _bounded_ 
+_parameter type_ is a generic type that specifies a bound for the generic.
+
+A _wildcard generic type_  is an unknown generic type represented with a question 
+mark (?). We can use generic wildcards in three ways, as shown in Table 9.13.
+
+**Table 9.13: Types of bounds**
+![bound generic type](generic_types_bound.png)
+
+This section looks at each of these three wildcard types.
+
+
+#### Creating Unbounded Wildcards
+
+An unbounded wildcard represents any data type. We use `?` when we want to specify 
+that any type is okay with the method. Let's suppose that we want to write a method 
+that looks through a list of any type.
+```
+public static void printList(List<Object> list) {
+  for (Object x : list)
+    System.out.println(x);
+}
+
+public static void main(String[] args) {
+  List<String> keywords = new ArrayList<>();
+  keywords.add("java");
+  printList(keywords);     // does not compile
+}
+```
+
+What's wrong? A `String` is a subclass of an `Object`, this is true. However, 
+`List<String>` cannot be assigned to `List<Object>`. It doesn't sound logical. 
+Java is trying to protect us from ourselves with this. Imagine if we could write 
+code like this:
+```
+4: List<Integer> numbers = new ArrayList<>();
+5: numbers.add(Integer.valueOf(42));
+6: List<Object> objects = numbers;    // does not compile
+7: objects.add("forty two");
+8: System.out.println(number.get(1));
+```
+
+On line 4, the compiler promises us that only integer objects will appear in `numbers`. 
+If line 6 compiles, line 7 would break that promise by putting a `String` in there, 
+since `numbers` and `objects` are references to the same object. Good thing that the 
+compiler prevents this.
+
+We cannot assign a `List<String>` to a `List<Object>`, this is fine, since we don't 
+want a `List<Object>`. What we really need is a list of "whatever". That's what 
+`List<?>` is. The following code does what we expect:
+```
+public static void printList(List<?> list) {
+  for (Object x : list)
+    System.out.println(x);
+}
+
+public static void main(String[] args) {
+  List<String> keywords = new ArrayList<>();
+  keyword.add("java");
+  printList(keywords);
+}
+```
+
+The `printList()` method takes any type of list as a parameter. The `keywords` variable 
+is of type `List<String>`. We have a match! `List<String>` is a list of anything. This 
+"anything" just happens to be a `String` in this case.
+
+Finally, let's look at the impact of `var`. This two statements are equivalent?
+```
+List<?> x1 = new ArrayList<>();
+vax x2 = new ArrayList<>();
+```
+
+They are not. There are two key differences. First, `x1` is of type `List`, while `x2` 
+is ot type `ArrayList`. Additionally, we can only assign `x2` to a `List<Object>`. 
+These two variables do have on thing in common. Both return type `Object` when calling 
+the `get()` method.
+
+
+#### Creating Upper-Bounded Wildcards
+
 
 
 
