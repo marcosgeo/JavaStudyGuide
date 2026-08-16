@@ -22,16 +22,16 @@ can be used with many types.
 
 A _collection_ is a group of objects contained in a single object. The _Java Collections_ 
 _Framework_ is a set of classes in `java.util` for storing collections. There are four 
-main interfaces in the Java Collection Framework.
+main interfaces in the Java Collections Framework.
 - `List`: is an ordered collection of elements that allows duplicate entries and 
     are accessed by an index.
 - `Set`: is a collection of objects that does not allows duplicate entries.
 - `Queue`: is a collection that orders its elements in a specific order for processing.
-    A `Deque` is a subinterface of `Queue` that allows access at both ends.
+    A `Deque` is a sub-interface of `Queue` that allows access at both ends.
 - `Map`: is a collection that maps key to values, with not duplicate keys allowed. The
     elements in a map are key/value pairs, also known as **dictionary**.
 
-The Collection interface, it subinterfaces, and some classes (rounded rect) that 
+The `Collection` interface, it's sub-interfaces, and some classes (rounded rect) that 
 implement the interfaces (rectangles) are shown in the figure below: 
 
 Note that `Map` doesn't implement `Collection` interface. It is considered part of 
@@ -149,7 +149,7 @@ than 0. After we add elements, the size becomes positive, and it is no longer em
 
 ### Clearing the Collection
 
-the `clear()` method provides an easy way to discard all elements of the `Collection. 
+the `clear()` method provides an easy way to discard all elements of the `Collection`. 
 The method signature is as follows:
 ```
 public void clear()
@@ -289,9 +289,9 @@ The following shows us an example:
 30: System.out.println(list1.equals(set1));      // false
 ```
 
-Line 28 prints `false` because the elements are in a different order, and a `List` 
-cares about order. By contrast, line 29 prints `true` because a `Set` is not sensitive 
-to order. Finally, line 30 prints `false` because the types are different.
+Line 28 prints "false" because the elements are in a different order, and a `List` 
+cares about order. By contrast, line 29 prints "true" because a `Set` is not sensitive 
+to order. Finally, line 30 prints "false" because the types are different.
 
 
 ***Unboxing _nulls_***
@@ -680,7 +680,7 @@ the first to get out of the line, this originates the "FIFO", first-in, first-ou
 queue.
 
 A `Deque` (double-ended queue), is different from a regular queue in a way that we 
-can isert and remove elements from both the front (head) and back (tail) of the queue.
+can insert and remove elements from both the front (head) and back (tail) of the queue.
 A `LinkedList`, in addition to being a `List` it is also a `Deque`, since it implements 
 both interfaces. The trade-off is that it isn't as efficient as a "pure" queue. We can 
 use the `ArrayDeque` class is we don't need the `List` methods.
@@ -2025,7 +2025,7 @@ This is convenient. Now we have an immutable, generic record!
 
 ### Bounding Generic Types
 
-By now, we might think that generics ton't seem particularly useful since they are 
+By now, we might think that generics don't seem particularly useful since they are 
 treated as `Object` and, therefore, don't have many methods available. Bounded 
 wildcards solve this by restricting what types can be used in a generic. A _bounded_ 
 _parameter type_ is a generic type that specifies a bound for the generic.
@@ -2034,6 +2034,7 @@ A _wildcard generic type_  is an unknown generic type represented with a questio
 mark (?). We can use generic wildcards in three ways, as shown in Table 9.13.
 
 **Table 9.13: Types of bounds**
+
 ![bound generic type](generic_types_bound.png)
 
 This section looks at each of these three wildcard types.
@@ -2097,7 +2098,7 @@ is of type `List<String>`. We have a match! `List<String>` is a list of anything
 Finally, let's look at the impact of `var`. This two statements are equivalent?
 ```
 List<?> x1 = new ArrayList<>();
-vax x2 = new ArrayList<>();
+var x2 = new ArrayList<>();
 ```
 
 They are not. There are two key differences. First, `x1` is of type `List`, while `x2` 
@@ -2107,6 +2108,89 @@ the `get()` method.
 
 
 #### Creating Upper-Bounded Wildcards
+
+Let's try to write a method that adds up the total of a list of numbers. We've 
+established that a generic type can't just use a subclass.
+```
+ArrayList<Number> list = new ArrayList<Integer>();     // does not compile
+```
+
+Instead, we need to use a wildcard:
+```
+List<? extends Number> list = new ArrayList<Integer>();
+```
+
+The upper-bounded wildcard says that any class that extends `Number` or `Number` 
+itself can be used as the forma parameter type:
+```
+public static long total(List<? extends Number> list) {
+  long count = 0;
+  for (Number number : list) {
+    count += number.longValue();
+  }
+  return count;
+}
+```
+
+Since type erasure makes Java think that a generic type is an `Object`, this still 
+happening here. Java converts the previous code to something like the following:
+```
+public static long total(List list) {
+  long count = 0;
+  for (Object obj : list) {
+    Number number = (Number) obj;
+    count += number.longValue();
+  }
+  return count;
+}
+```
+
+Something interesting happens when we work with upper bounds or unbounded wildcards. 
+The list becomes logically immutable and therefore cannot be modified. Technically, 
+we can remove elements from the list, but this is beyond our current scope. **Upper** 
+**bounded lists are mainly for reading purpose**.
+```
+2: static class Sparrow extends Bird {}
+3: static class Bird {}
+4:
+5: public static void main(String[] args) {
+6:   List<? extends Bird> birds = new ArrayList<Bird>();
+7:   birds.add(new Sparrow());     // does not compile
+8:   birds.add(new Bird());     // does not compile
+9: }
+```
+
+The problem stems from the fact that Java doesn't know what type `List<? extends Bird>` 
+really is. It could be a `List<Bird>` or `List<Sparrow>` or some other generic type 
+that hasn't even been written yet. Line 7 doesn't compile because we can't add a 
+`Sparrow` to `List<? extends Bird>`, and line 8 doesn't compile because we can't add 
+a `Bird` to `List<Sparrow>`. From Java's point of view, both scenarios are equally 
+possible, so neither is allowed.
+
+Now let's try an example with an interface. Whe have an interface and two classes 
+that implement it and two methods that use it.
+```
+interface Flyer { void fly(); }
+class HangGlider implements Flyer { public void fly() {} }
+class Goose implements Flyer { public void fly() {} }
+
+---
+private void anyFlyer(List<Flyer> flyers) {}
+private void groupOfFlyers(List<? extends Flyer> flyers) {}
+```
+
+Note that, on the methods implementation, we used the keyword `extends` rather 
+than `implements`. Upper bounds are like anonymous classes in that they use 
+`extends` regardless of whether we are working with a class or an interface.
+
+We already learned that a variable of type `List<Flyer>` can be passed to either 
+method. A variable to type `List<Goose>` can be passed on ly to the one with the 
+upper bound. This shows a benefit of generics. Random flyers don't fly together. 
+We want our `groupOfFlyers()` method to be called only with the same type. `Geese` 
+fly together but don't fly with hang gliders.
+
+
+#### Creating Lower-Bounded Wildcards
 
 
 
