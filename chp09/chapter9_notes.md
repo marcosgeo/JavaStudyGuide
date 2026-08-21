@@ -1,4 +1,4 @@
-# Chapter 9: Collection and Generics
+# Chapter 9: Collections and Generics
 
 In this chapter, we will learn _Java Collections Framework_ classes and interfaces we 
 need to know. The thread-safe collection types are discussed in Chapter 13, "Concurrency".
@@ -111,11 +111,11 @@ public boolean remove(Object object)
 This time, the `boolean` return value tells us whether a match was removed. Examples:
 ```
 3: Collection<String> birds = new ArrayList<>();
-4: birds.add("hawk");     // [hawk]
-5: birds.add("hawk");     // [hawk,hawk]
+4: birds.add("hawk");                               // [hawk]
+5: birds.add("hawk");                               // [hawk,hawk]
 6: System.out.println(birds.remove("cardinal"));    // false
-7: System.out.println(birds.remove("hawk"));     // true
-8: System.out.println(birds);     // [hawk]
+7: System.out.println(birds.remove("hawk"));        // true
+8: System.out.println(birds);                       // [hawk]
 ```
 
 Line 6 tries to remove an element that is not in birds. It returns `false` because 
@@ -135,12 +135,12 @@ public int size()
 The following shows how t use these methods:
 ```
 Collection<String> birds = new ArrayList<>();
-System.out.println(birds.isEmpty());    // true
-System.out.println(birds.size());      0
+System.out.println(birds.isEmpty());     // true
+System.out.println(birds.size());        //  0
 birds.add("hawk");     // [hawk]
 birds.add("hawk");     // [hawk,hawk]
 System.out.println(birds.isEmpty());     // false
-System.out.println(birds.size());     // 2
+System.out.println(birds.size());        // 2
 ``` 
 
 At the beginning, `birds` has a size of 0 and is empty. It has capacity that is greater 
@@ -158,13 +158,13 @@ public void clear()
 The following shows how to use this method:
 ```
 Collection<String> birds = new ArrayList<>();
-birds.add("hawk");     // [hawk]
-birds.add("hawk");     // [hawk,hawk]
+birds.add("hawk");                       // [hawk]
+birds.add("hawk");                       // [hawk,hawk]
 System.out.println(birds.isEmpty());     // false
-System.out.println(birds.size());      // 2
-birds.clear();       // []
-System.out.println(birds.isEmpty());    // true
-System.out.println(birds.size());      // 0
+System.out.println(birds.size());        // 2
+birds.clear();                           // []
+System.out.println(birds.isEmpty());     // true
+System.out.println(birds.size());        // 0
 ```
 
 After calling `clear()`, `birds` is back to being an empty `ArrayList` of size 0.
@@ -182,7 +182,7 @@ The following shows how to use this method:
 ```
 Collection<String> birds = new ArrayList<>();
 birds.add("hawk");     // [hawk]
-System.out.println(birds.contains("hawk"));    // true
+System.out.println(birds.contains("hawk"));     // true
 System.out.println(birds.contains("robin"));    // false
 ```
 
@@ -205,9 +205,9 @@ takes one parameter and returns a `boolean`. Let's see am example:
 4: Collection<String> list = new ArrayList<>();
 5: list.add("Magician");
 6: list.add("Assistant");
-7: System.out.println(list);     // [Magician,Assistant]
+7: System.out.println(list);                  // [Magician,Assistant]
 8: list.removeIf(s -> s.startsWith("A"));
-9: System.out.println(list);     // [Magician]
+9: System.out.println(list);                  // [Magician]
 ```
 
 Line 8 shows how to remove all of the `String` values that begin with the letter A.
@@ -285,7 +285,7 @@ The following shows us an example:
 26: var set2 = Set.of(2, 1);
 27:
 28: System.out.println(list1.equals(list2));     // false
-29: System.out.println(set1.equals(set2));     // true
+29: System.out.println(set1.equals(set2));       // true
 30: System.out.println(list1.equals(set1));      // false
 ```
 
@@ -349,7 +349,7 @@ _the beginning and end of the list in constant time_. This makes a `LinkedList` 
 choice when we need use a `Deque`. The figure 9.1 shows that a `LinkedList` implements 
 both, the `List` and `Deque` interfaces.
 
-**Figure 9.1**
+**Figure 9.1 - Collections Framework**
 
 ![Collections Interface](collections.png)
 
@@ -368,15 +368,15 @@ convenient, especially when testing. Some of these methods return an immutable o
 Let's take a look at an example of these three methods
 ```
 16: String[] array = new String[]{"a", "b", "c"};
-17: List<String> asList = Arrays.asList(array);    // [a, b, c]
-18: List<String> of = List.of(array);    // [a, b, c]
-19: List<String> copy = List.copyOf(asList);     //  [a, b, c]
+17: List<String> asList = Arrays.asList(array);     // [a, b, c]
+18: List<String> of = List.of(array);               // [a, b, c]
+19: List<String> copy = List.copyOf(asList);        //  [a, b, c]
 20: 
 21: array[0] = "z";
 22: 
 23: System.out.println(asList);     // [z, b, c]
-24: System.out.println(of);     // [a, b, c]
-25: System.out.println(copy);     // [a, b, c]
+24: System.out.println(of);         // [a, b, c]
+25: System.out.println(copy);       // [a, b, c]
 26: 
 27: asList.set(0, "x");
 28: System.out.println(Arrays.toString(array));    // [x, b, c]
@@ -480,13 +480,13 @@ public default void                  Sorts list. This will be cover later in a s
 The following statements demonstrate most of these methods for working with a `List`:
 ```
  3: List<String> list = new ArrayList<>();
- 4: list.add("SD");     // [SD]
- 5: list.add(0, "NY");     // [NY,SD]
- 6: list.set(1, "FL");     // [NY,FL]
+ 4: list.add("SD");                      // [SD]
+ 5: list.add(0, "NY");                   // [NY,SD]
+ 6: list.set(1, "FL");                   // [NY,FL]
  7: System.out.println(list.get(0));     // NY
- 8: list.remove("NY");     // [FL]
- 9: list.remove(0);     // []
-10: list.set(0, "?");     // IndexOutOfBoundsException
+ 8: list.remove("NY");                   // [FL]
+ 9: list.remove(0);                      // []
+10: list.set(0, "?");                    // IndexOutOfBoundsException
 ```
 
 On line 3, `list` starts out empty. Line 4 adds on element to the end of the list 
@@ -582,7 +582,7 @@ see them more than once.
 The main thing that all `Set` implementation have in common is that they do not allow 
 duplicates. We will look at each implementation that we need to know to write code.
 
-**Figure 9.3 - Set
+**Figure 9.3 - Set**
 
 ![Set](set.png)
 
@@ -628,7 +628,7 @@ stating with `HashSet`:
 4: boolean b1 = set.add(66);    // true
 5: boolean b2 = set.add(10);    // true
 6: boolean b3 = set.add(66);    // false
-7: boolean b4 = set.add(8);    // true
+7: boolean b4 = set.add(8);     // true
 8: set.forEach(System.out::println);
 ```
 This code prints three lines:
@@ -655,7 +655,7 @@ Now let's look at the same example with `TreeSet`:
 4: boolean b1 = set.add(66);    // true
 5: boolean b2 = set.add(10);    // true
 6: boolean b3 = set.add(66);    // false
-7: boolean b4 = set.add(8);    // true
+7: boolean b4 = set.add(8);     // true
 8: set.forEach(System.out.println);
 ```
 
@@ -693,6 +693,7 @@ type, such as `null`, for all information. The bolded methods thrown an exceptio
 case something goes wrong.
 
 **Table 9.3 - Queue Methods**
+
 ![Queue methods](queue_methods.png)
 
 Let's show a simple example
@@ -701,7 +702,7 @@ Let's show a simple example
 5: queue.add(10);
 6: queue.add(4);
 7: System.out.println(queue.remove());    // 10
-8: System.out.println(queue.peek());    // 4
+8: System.out.println(queue.peek());      // 4
 ```
 
 Line 5 and 6 add elements to the queue. Line 7 asks the first element waiting the 
@@ -713,6 +714,7 @@ The `Deque` interface supports double-ended queues, it inherits all `Queue` meth
 and adds more so, it is clear if we are working with the from or back of the queue.
 
 **Table 9.4 - Deque Methods**
+
 ![Deque methods](deque_methods.png)
 
 
@@ -720,12 +722,12 @@ Let's see a deque example:
 ```
 12: Deque<Integer> deque new LinkedList<>();
 13: deque.offerFirst(10);    // true   10<-
-14: deque.offerLast(4);    // true   10<-->4<-
-15: deque.peekFirst();     // 10    10<-->4<-
-16: deque.pollFirst();     // 10     4<-
-17: deque.pollLast();      // 4
-18: deque.pollFirst();     // null
-19: deque.peakFirst();     // null
+14: deque.offerLast(4);      // true   10<-->4<-
+15: deque.peekFirst();       // 10    10<-->4<-
+16: deque.pollFirst();       // 10     4<-
+17: deque.pollLast();        // 4
+18: deque.pollFirst();       // null
+19: deque.peakFirst();       // null
 ```
 
 Line 12 show that we use the same class, `LinkedList` to create a `Deque` or a `Queue`, 
@@ -746,6 +748,7 @@ from the top of the stack to avoid a mess. We can use the same double-ended queu
 implementation, _we just change the methods used_!
 
 **Table 9.5 - Using Deque as a stack**
+
 ![Deque as stack](stack_methods.png)
 
 Using the `Deque` as an stack:
@@ -862,7 +865,7 @@ map.put("lion", "meet");
 map.put("giraffe", "leaf");;
 String food = map.get("koala");     // bamboo
 for (String key : map.keySet())
-  System.out.print(key + ",");     // giraffe,koala,lion
+  System.out.print(key + ",");      // giraffe,koala,lion
 ```
 
 `TreeMap` sorts the keys as we would expect. If we called `values()` instead of 
@@ -870,13 +873,13 @@ for (String key : map.keySet())
 
 With the same map, we can try some boolean checks:
 ```
-System.out.println(map.contains("lion"));    // does not compile
-System.out.println(map.containsKey("lion"));     // true
+System.out.println(map.contains("lion"));          // does not compile
+System.out.println(map.containsKey("lion"));       // true
 System.out.println(map.containsValue("lion"));     // false
-System.out.println(map.size());     // 3
+System.out.println(map.size());                    // 3
 map.clear();
-System.out.println(map.size());     // 0
-System.out.println(map.isEmpty());     // true
+System.out.println(map.size());                    // 0
+System.out.println(map.isEmpty());                 // true
 ```
 
 The first line is a little tricky. The `contains()` method is on the `Collection` 
@@ -953,10 +956,10 @@ These methods are similar to the `List` version, except a key is involved:
 21: Map<Integer, Integer> map = new HashMap<>();
 22: map.put(1, 2);
 23: map.put(2, 4);
-24: Integer original = map.replace(2, 10);    // 4
-25: System.out.println(map);     // {1=2, 2=10}
+24: Integer original = map.replace(2, 10);      // 4
+25: System.out.println(map);                    // {1=2, 2=10}
 26: map.replaceAll( (k, v) -> k + v );
-27: System.out.println(map);     // {1=3, 2=12}
+27: System.out.println(map);                    // {1=3, 2=12}
 ```
 
 Line 24 replaces the values for key 2 and returns the original value. Line 26 
@@ -1000,8 +1003,8 @@ function to the `merge()` method.
 19: String tom = favorites.merge("Tom", "Sky-ride", mapper);
 20:
 21: System.out.println(favorites);     // {Tom=Sky-ride, Jenny=City Bus Tour}
-22: System.out.println(jenny);     // City Bus Tour
-23: System.out.println(tom);      // Sky-ride 
+22: System.out.println(jenny);         // City Bus Tour
+23: System.out.println(tom);           // Sky-ride 
 ```
 
 The code on lines 11 and 12 takes two parameters and returns a value. In this case, 
@@ -1135,15 +1138,15 @@ public class Duck implements Comparable<Duck> {
   }
 
   public int compareTo(Duck other){
-    return name.compareTo(other.name);    // sorts ascending by name
+    return name.compareTo(other.name);        // sorts ascending by name
   }
 
   public static void main(String[] args) {
     var ducks = new ArrayList<Duck>();
     ducks.add(new Duck("Quack"));
     ducks.add(new Duck("Puddles"));
-    Collections.sort(ducks);    // sort by name
-    System.out.println(ducks);    // [Puddles, Quack]
+    Collections.sort(ducks);                  // sort by name
+    System.out.println(ducks);                // [Puddles, Quack]
   }
 }
 ```
@@ -1848,7 +1851,7 @@ overloaded by changing the generic parameter type only.
 
 ### Implementing Generic Interfaces
 
-Just like a class, an interface can declare a forma type parameter. For example, the 
+Just like a class, an interface can declare a formal type parameter. For example, the 
 following `Shippable` interface uses a generic type as the argument to its `ship()` 
 method:
 ```
@@ -1937,11 +1940,11 @@ it is specified immediately before the return type of the method, to be clear:
 ```
                        ;-- formal parameter
                       /
-  public     static <T>     Transport<T>      ship(T t)
-/________/  /___________/  /____________/  /____________/
-    /            /               /                /
-access     generic method   return type    method name and
-modifier    declaration                      parameters
+  public     static  <T>   Transport<T>      ship(T t)
+/________/  /_____/       /____________/  /____________/
+    /         /                /                /
+access     optional       return type    method name and
+modifier   specifier                       parameters
 
 ```
 
@@ -2192,6 +2195,210 @@ fly together but don't fly with hang gliders.
 
 #### Creating Lower-Bounded Wildcards
 
+Let's try to write a method that adds a string "quack" to two lists:
+```
+List<String> strings = new ArrayList<String>();
+strings.add("tweet");
+
+List<Object> objects = new ArrayList<Object>(string);
+addSound(strings);
+addSound(objects);
+```
+
+The problem is that we want to pass a `List<String>` and a `List<Object>` to the 
+same method. To solve this problem, we need to use a lower bound.
+```
+public static void addSound(List<? super String> list) {
+  list.add("quack");
+}
+```
+With a lower bound, we are telling Java that the list will be a list of `String` 
+object or a list of some objects that are a superclass fo `String`. Either way, 
+it is safe to add a `String` to that list.
+
+Just like generic classes, we probably won't use this in our code, unless we are 
+writing code for other to reuse. Even then, it would be rare.
+
+---
+**Understanding Generic Supertypes**
+
+When we have subclasses and superclasses, lower bounds can get tricky.
+```
+3: List<? super IOException> exceptions = new ArrayList<Exception>();
+4: exceptions.add(new Exception());     // does not compile
+5: exceptions.add(new IOException());
+6: exceptions.add(new FileNofFoundException());
+```
+
+Line 3 references a `List` that could be `List<IOException>` or `List<Exception>` 
+or `List<Object>`. Line 4 does not compile because we could have a `List<IOException>`, 
+and an `Exception` object wouldn't fit in there.
+
+Line 5 is fine. `IOException` can be added to any of those types. Line 6 is also fine. 
+`FineNotFoundException` can also be added to any of those three types. This is tricky 
+because `FileNotFoundException` is a subclass of `IOException`, and the keyword says 
+`super`. Java think: "Well, FileNotFoundException als happens to be an IOException, so 
+everything is fine.".
+
+![generic lower bound explanation](generic_lower_bounnd_explanation.png)
+
+---
 
 
+### Putting All Together
 
+At this point we know everything that we need to know about generics. It is possible 
+to put these concepts together to write some _really_ confusing code, which we could 
+expect on the exam. This section is going to be difficult to read. It contains the 
+hardest questions that we could probably be asked about generics, harder than the 
+ones in the exam.
+
+#### Combining Generic Declarations
+
+First, we declare three classes that the example will use:
+```
+class A {}
+class B extends A {}
+class C extends B {}
+```
+
+Can we figure out why these do or don't compile? Also, what they do?
+```
+6: List<?> list1 = new ArrayList<A>();
+7: List<? extends A> list2 = new ArrayList<A>();
+8: List<? super A> list3 = new ArrayList<A>();
+```
+
+Line 6 creates an `ArrayList` that can hold instance of class `A`. It is stored in 
+a variable with an unbounded wildcard. Any generic type can be referenced from an 
+unbounded wildcard, making this okay.
+
+Line 7 tries to create a list in a variable declaration with an upper-bounded wild-
+card. This is okay. We can have `ArrayList<A>`, `ArrayList<B>`, or `ArrayList<C>` 
+stored in that reference.
+
+Line 8 is also okay. This time, we have a lower-bounded wildcard. The lowest type 
+we can reference is `A`. Since that is what we have, it compiles.
+
+Let's try another:
+```
+09: List<? extends B> list4 = new ArrayList<A>();       // does not compile
+10: List<? super B> list5 = new ArrayList<A>();
+11: List<?> list6 = new ArrayList<? extends A>();      // does not compile
+```
+
+Line 9 has an upper-bounded wildcard that allows `ArrayList<B>` or `ArrayList<C>` 
+to be referenced. Since we have `ArrayList<A>` that is trying to be referenced, 
+the code does not compile.
+
+Line 10 has a lower-bounded wildcard, which allows a reference to `ArrayList<A>`, 
+`ArrayList<B>`, or `ArrayList<Object>`.
+
+Line 11 allows a reference to any generic type since it is an unbounded wildcard. 
+The problem is that we need to know what that type will be when instantiating the 
+`ArrayList`. It wouldn't be useful anyway, because wwe can't add any elements to 
+that `ArrayList`.
+
+![generic lower bound explanation_ex-1](generic_lower_bounnd_explanation_ex1.png)
+
+
+#### Passing Generic Arguments
+
+Why the methods below don't compile or what the do? We will present the methods 
+one at a time because the is more to think about.
+```
+<T> T first(List<? extends T> list) {
+  return list.get(0);
+}
+```
+
+The method `first()` is a perfectly normal use of generics. It uses a method-specific 
+type parameter, `<T>`. It takes a parameter of `List<T>`, or some subclass of `T`, and 
+it returns a single object ot that `T` type. For example, we can call it with a 
+`List<String>` and have it return a `String`. Or we could call it with a `List<Number>` 
+parameter and have it return a `Number`.
+
+What is wrong with this one:
+```
+<T> <? extends T> second(List<? extends T> list) {     // does not compile
+  return list.get(0)
+}
+```
+
+The `second()` does not compile because the return type isn't actually a type. We 
+are writing the method so, we know what type it is supposed to return. We don't get 
+to specify this as wildcard.
+
+Another:
+```
+<B extends A> B third(List<B> list) {
+  return new B();     // does not compile
+}
+``` 
+
+The `third()` method does not compile. `<B extends A>` says that we want to use `B` 
+as a type parameter just for this method and that it needs to extend the `A` class. 
+Coincidentally, `B` is also the name of a class. In fact isn't a coincidence, it's 
+a tricky. Within the scope of the method, `B` can represent `A`, `B`, or `C`, 
+because all extend the `A` class. Since `B` no longer refers to the `B` class in 
+the method.
+
+This on is straightforward:
+```
+void forth(List<? super B> list) { }
+```
+
+The `fourth()` method is a normal use of generics. We can pass the type `List<B>`, 
+`List<A>` or `List<Object>`.
+
+Finally, whis this example does not compile?
+```
+<X> void fifth(List<X super B> list) {     // does not compile
+}
+```
+
+The last method, `fifth()`, does not compile because it tries to mix a method-specific 
+type parameter with a wildcard. A wildcard must have a `?` in it.
+
+[go to top](#chapter-9-collections-and-generics)
+
+
+## Summary
+
+The Java Collection Framework includes four main types of structures: list, sets, 
+queues, and maps. The `Collection` interface is the parent interface os `List`, 
+`Set`, and `Queue`. Additionally, `Deque` extends `Queue`. The `Map` interface 
+does not extend `Collection`. We need to recognize the following:
+* **List**: An ordered collection of elements that allows duplicate entries
+    * **ArrayList**: standard resizable list
+    * **LinkedList**: can easily add/remove from beginning or end
+* **Set**: a collection of items without duplication
+    * **HashSet**: uses hashCode() to find unordered elements
+    * **TreeSet**: sorted collection. Does not allow null value
+* **Queue/Deque**: an ordered collection of items, generally for processing
+    * **ArrayDeque**: double-ended queue
+    * **LinkedList**: double ended queue and list
+* **Map**: maps unique keys to values (dictionary)
+    * **HahsMap**: uses hashCode() to find the keys
+    * **TreeMap**: sorted map. Does not allow null keys
+
+
+The `Comparable` interface declares the `compareTo()` method. This method returns a 
+_negative_ number if the object is smaller than its argument, _0_ if the two objects 
+are equal, and a _positive_ number otherwise. The `compareTo()` method is declared 
+on the object that is being compared, and it takes one parameter. The `Comparator` 
+interface defines the `compare()` method. A _negative_ number is returned if the first 
+argument is smaller, _zero_ if they are equal, and a _positive_ number otherwise. The 
+`compare()` method can be declare in any code, and it takes two parameters. Often, a 
+`Comparator` is implemented using a lambda.
+
+Generics are type parameters for code. To create a class with a generic parameter, 
+we add <T> after the class name. We can use any name we want fot the type parameter. 
+Single uppercase letter are common choices. Generics allow us to specify wildcards. 
+`<?>` is an unbounded wildcard that means any type. `<? extends Object>` is an upper 
+bound that means any type that is Object or extends it. `<? extends MyInterface>` 
+means any type that extends MyInterface. `<? super Number>` is a lower bound that 
+means any typ that is Number or a superclass. A compiler error result from code that 
+attempts to add an item in a list with an unbounded or upper-bounded wildcard.
+
+[go to top](#chapter-9-collections-and-generics)
