@@ -831,6 +831,7 @@ on Table 9.6. Some of the method signatures are simplified to make them easier t
 understand.
 
 **Table 9.6 - Map methods**
+
 ![Map methods](map_methods.png)
 
 While the table is a pretty long list of methods, many of the names are straightforward. 
@@ -1106,7 +1107,7 @@ We use `Collections.sort()` to sort any type of collection involving the this da
 types Tt return void because is the method parameter that is what get sorted. 
 
 We can also sort objects that we create. Java provides an interface called `Comparable`, 
-if out class implements `Comparable`, it can be used in data structures that requires 
+if our class implements `Comparable`, it can be used in data structures that requires 
 comparison. There is also a class called `Comparator`, which is used to specify that 
 we want to use a different order than the object itself provides.
 
