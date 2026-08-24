@@ -189,3 +189,61 @@ identifies that the value 2 is at index 0. Therefore, option A is correct. The o
 comparators sort in descending order. Therefore, the precondition for `binarySearch()` 
 is not met, and the result is undefined for those two. The two call to `reverse()` are 
 just there to distract, since they cancel each other out.
+
+14) 
+A, B,
+`Y` is both a class and a type parameter. This means that within the class `Z`, when we 
+refer to `Y`, it uses the type parameter. All of the choices that mention class `Y` are 
+incorrect because it no longer means the `class `Y`. Only options A and B are correct.
+
+
+15) 
+A, C,
+A `LinkedList` implements both `List` and `Queue`. The `List` interface has a method 
+to remove by index. Since this method exists, Java does not autobox to call the other 
+method, making the output [10] and option A correct. Similarly, option C is correct 
+because the method to remove an element by index is available on a `LinkedList<Object>` 
+(which is what `var` represents here). By contrast, `Queue` has only the remove by 
+object method, so Java does autobox there. Since the number 1 is not in the list, Java 
+does not remove anything for the `Queue`, and the output is [10, 12].
+
+16) 
+E
+This question looks like it is about generics, but it's not. It is trying to see whether 
+we noticed that `Map`does not have a `contains()` method. It has `containsKey()` and 
+`containsValue()` instead, making option E the answer. If `containsKey()` were called, 
+the answer would be false because 123 is an `Integer` key in the `Map`, rather than a 
+`String`.
+
+
+17) 
+A, E,
+The key to this question is keeping track of the types. Line 48 is a `Map<Integer, Integer>`. 
+Line 49 builds a `List` out of a `Set` of `Entry` objects. giving us `List<Entry<Integer, Integer>>`. 
+This causes a compiler error on line 56 since we can't multiply an `Entry` object by two.
+
+Lines 51 to 54 are all of type `List<Integer>`. The first three are immutable, and the 
+one on line 54 is mutable. This means line 57 throws an `UnsupportedOperationException` 
+since we attempt to modify the list. Line 58 would work if we could get to it. Since 
+there is one compiler error and one runtime error, options A and E are correct.
+
+
+18) 
+B,
+When using generic types in a method, the generic specifications goes before the return 
+type and option B is correct.
+
+19) 
+F
+The first call to `merge()` calss the mapping function and adds the number to get 13. 
+It then updates the map. The second call to `merge()` sees that the map currently has 
+a `null` value for that key. It does not call the mapping function but instead replaces 
+it with the new value of 3. Therefore, option F is correct.
+
+20) 
+B, D, F,
+The `java.lang.Comparable` interface is implemented on the object to compare. It specifies 
+the `compareTo()` method, which takes one parameter. The `java.util.Comparator` interface 
+specifies the `compare()` method, which takes two parameter. This gives us options B, D, 
+and F as the answers.
+
