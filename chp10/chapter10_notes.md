@@ -9,6 +9,15 @@ In this chapter the `Optional` interface is introduced. Then the concept of _str
 _pipeline_ and how to tie all together. Functional programming tends to have a steep 
 learning  curve but can be very exciting once we get the hang of it.
 
+[Returning an Optional](#returning-an-optional)
+
+[Using Streams](#using-streams)
+
+[Working with Primitive Streams](#working-with-primitive-streams)
+
+[Working with Advanced Stream Pipeline](#working-with-advanced-stream-pipelines-concepts)
+
+
 
 ## Returning an _Optional_
 
@@ -194,6 +203,9 @@ Another advantage of `Optional` is that we can use a functional programming styl
 with `ifPresent()` and the other methods rather than needing an if statement. We 
 will see at the end of the chapter how to chain `Optional` calls.
 ---
+
+[back to to](#chapter-10---streams)
+
 
 ## Using Streams
 
@@ -858,9 +870,490 @@ shows us that is really important to know method reference well.
 
 #### Taking a Peek
 
+The `peek()` method is our final intermediate operation. It is useful for debugging 
+because it allows us to perform a stream operation without changing the stream. The 
+method signature is as follows:
+```
+public Stream<T> peek(Consumer<? super T> action)
+```
+
+The most common use for `peek()` is to output the contents of the stream as it goes 
+by. Suppose that we made a type and counted bears beginning with the letter "g" instead 
+of "b". We are puzzled why the count is 1 instead of 2. We can add a `peek()` method 
+to find out why.
+```
+var stream = Stream.of("black bear", "brown bear", "grizzly");
+long count = stream.filter( s -> startsWith("g"))
+  .peek(System.out::println).count();     // grizzly
+System.out.println(count);                // 1
+```
+
+In a stream, `peek()` looks at each element that goes through that part of the stream 
+pipeline. It's like a worker take notes on how a particular step of the process is doing. 
+This is different from `peek()` in a `Queue` where it looks only at the first element of 
+the queue.
+
+---
+**Danger: Changing State with _peak()_**
+
+Remembering that `peak()` is intended to perform an operation without changing the 
+result. Here's a straightforward stream pipeline that doesn't use `peek()`.
+```
+var numbers = new ArrayList<>();
+var letters = new ArrayList<>();
+numbers.add(1);
+letters.add('a');
+
+Stream<List<?>> stream = Stream.of(numbers, letters);
+stream.map(List::size).forEach(System.out::print);     // 11
+```
+
+Now we add a `peek()` cal and note that Java doesn't prevent us from writing bad 
+peek code:
+```
+Stream<List<?>> bad = Stream.of(numbers, letters);
+bad.peek(x -> x.remove(0))
+  .map(List::size)
+  .forEach(System.out::print);     // 00
+```
+
+This example is bad because `peek()` is modifying the data structure that is used in 
+the stream, which causes the result of the stream pipeline to be different that if 
+the peek wasn't present.
+
+---
+
+
+### Putting Together the Pipeline
+
+Streams allows us to use chaining and express what we want to accomplish rather 
+than how to do so. Let's say that we wanted to get the first two names of out friends 
+alphabetically that are four characters long. Without streams, we'd have to write 
+something like the following:
+```
+var list = List.of("Toby", "Anna", "Leroy", "Alex");
+List<String> filtered = new ArrayList<>();
+for (String name : list)
+  if (name.length() == 4) filtered.add(name);
+
+Collections.sort(filtered);
+var iter = filtered.iterator();
+if (iter.hasNext()) System.out.println(iter.next());
+if (iter.hasNext()) System.out.println(iter.next());
+```
+
+This works. It takes some reading and thinking to figure out what is going on. The 
+problem we are trying to solve gets lost in the implementation. It is also very focused 
+on the how rather than on the what. With streams, the equivalent code is as follows:
+```
+var list = list.of("Toby", "Anna", "Leroy", "Alex");
+list.stream()
+  .filter(n -> n.length() == 4)
+  .sorted()
+  .limit(2)
+  .forEach(System.out::println)
+```
+
+The difference is that we express what is going on. We care about String objects of 
+length 4. Then we want them sorted. Then we want the first two. Then we want to print 
+them out. It maps better to the problem that we are trying to solve, and it is simpler.
+
+In this example we see all three parts of the pipeline. Figure 10.5 show how each 
+intermediate operation in the pipeline feeds into the next.
+
+**Figure 10.5 - Stream pipeline with multiple operations**
+
+![pipeline operation](pipeline_operations.png)
+
+
+Remembering that the assembly line foreperson is figuring out hwo to best implement 
+the stream pipeline. They set up all of the tables with instructions to wait before 
+starting. They tell the `limit()` worker to inform them when two elements go by. They 
+tell the `sorted()` worker that they should just collect all of the elements as they 
+come in and sort them all at once. After sorting, they should start passing them to 
+the `limit()` worker one at a time. 
+
+
+Another example. What this code does?
+```
+Stream.generate( () -> "Elsa" )
+  .filter( n -> n.length() == 4 )
+  .sorted()
+  .limit(2)
+  .forEach(System.out::println);
+```
+
+It hangs until we kill the program, or it throws an exception after running out of 
+memory. The foreperson has instructed `sorted()` to wait for everything to then sort. 
+That never happens because there is a infinite stream.
+
+
+What about this?
+```
+Stream.generate( () -> "Elsa" )
+  .filter( n -> n.length() == 4 )
+  .limit(2)
+  .sorted()
+  .forEach(System.out::println);
+```
+
+This one prints "Elsa" twice. The `filter()` lets elements through, and `limit()` stops 
+the earlier operations after two elements. Now `sorted()` can sort because we have a 
+finite list.
+
+What this code does?
+```
+Stream.generate( () -> "Olaf Lazisson" )
+  .filter( n -> n.length() == 4 )
+  .limit(2)
+  .sorted()
+  .forEach(System.out::println);
+```
+
+This one hangs as well until we kill the program. The `filter()` doesn't allow anything 
+through, so `limit()` never sees two elements. This means we have to keep waiting and 
+hope that they show up.
+
+
+We can even chain two pipelines together. Let's try identify the two sources and 
+the two terminal operations in this code.
+```
+30: long count = Stream.of("goldfish", "finch")
+31:   .filter( s -> s.length() )
+32:   .collect( Collectors.toList() )
+33:   .stream()
+34:   .count();
+35: System.out.println(count);     // 1
+```
+
+Lines 30 to 32 are one pipeline, and lines 33 and 34 are another. For the first 
+pipeline, line 30 is the source, and line 32 is the terminal operation. For the 
+second pipeline, line 33 is the source, and line 34 is the terminal operation. A 
+complicated way of outputting 1!
+
+When we see chained pipelines, we need to note where the source and terminal 
+operations are. This will help us to keep track of what is going on. We can even 
+rewrite the code to have a variable in between, so it isn't as long and complicated.
+```
+List<String> helper = Stream.of("goldfish", "finch")
+  .filter( s -> s.length() > 5 )
+  .collect( Collectors.toList() );
+long count = helper.stream()
+  .count();
+System.out.println(count);
+```
+
+The style we use is up to us. However, we nee to be able to read both styles.
+
+[back to top](#chapter-10---streams)
 
 
 ## Working with Primitive Streams
+
+Up until now, all fot the streams we've created used the `Stream` interface with 
+a generic type, like `Stream<String>`, `Stream<Integer>`, and so on. For numeric 
+values, we have been using wrapper classes. We did this with the `Collections` 
+API in Chapter 9, so it should feel natural.
+
+Java actually includes other stream classes besides Stream that we can use  to work 
+with select primitives: int, double, and long. Let's take a look at wy this is needed. 
+Suppose that we want to calculate the sum of number in a finite stream:
+```
+Stream<Integer> stream = Stream.of(1, 2, 3);
+System.out.println(stream.reduce( 0, (s, n) -> s + n) );    // 6
+```
+
+It wasn't hard to write a reduction. We start the accumulator with zero. We then 
+added each number to that running total as it came up in the stream. There is another 
+way of doing that:
+```
+Stream<Integer> stream = Stream.of(1, 2, 3);
+System.out.println( stream.mapToInt( x -> x).sum() );    // 6
+```
+
+This time, we converted our `Stream<Integer>` to an `IntStream` with `mapToInt()`, 
+and asked te `IntStream` to calculate the sum for us. An `IntStream` has many of 
+the same intermediate and terminal methods as a `Stream` but includes specialized 
+methods for working with numeric data. The primitive streams know how to perform 
+certain common operations automatically.
+
+This seems like a nice convenience, but when we think about how to compute an 
+average, this gets very important. We need to divide by the number of the elements. 
+The problem is that streams allow only one pass. Java recognizes that calculating 
+an average is a common thing to do, and it provides a method to calculate the 
+average on the stream classes for primitives.
+```
+IntStream intStream = IntStream.of(1, 2, 3);
+OptionalDouble avg = intStream.average();
+System.out.println(avg.getAsDouble());     // 2.0
+```
+
+Not only is it possible to calculate the average, but it is also easy to do so. 
+Clearly, primitive streams are important. We will look at creating and using 
+such streams, including optionals and functional interfaces.
+
+
+### Creating Primitive Streams
+
+These are the three types of primitive streams:
+ - **IntStream**: used for the primitive types `int`, `short`, `byte`, and `char`
+ - **LongStream**: used fot the primitive type `long`
+ - **DoubleStream**: used for the primitive types `double` and `float`
+
+These three are the most common, so Java designers went with just them.
+
+The table below shows some of the methods that are unique to primitive streams. Note 
+that common methods like `empty()` are not include, but the exists in this streams.
+
+**Table 10.5 - Common primitive stream methods**
+
+![primitive streams methods](primitive_streams_methods.png)
+
+Some methods for creating a primitive stream are equivalent to how we created the 
+source for a regular `Stream`. We can create an empty stream with this:
+```
+DoubleStream empty = DoubleStream.empty();
+```
+
+Another way is to use the `of()` factory method from a single value or by using 
+varargs overloaded:
+```
+DoubleStream oneValue = DoubleStream.of(3.14);
+oneValue.forEach(System.out::println);
+
+DoubleStream varargs = DoubleStream.of(1.0, 1.1, 1.2);
+varargs.forEach(System.out::println);
+```
+
+This code outputs:
+```
+3.14
+1.0
+1.1
+1.2
+```
+
+We can also use the two methods for creating infinite streams, just like we did 
+with `Stream`.
+```
+var random = DoubleStream.generate(Math::random);
+var fractions = DoubleStream.iterate(.5, d -> d / 2 );
+random.limit(3).forEach(System.out::println);
+fractions.limit(3).forEach(System.out::println);
+```
+
+Since the streams are infinite, a limit intermediate operation was added so that the 
+output doesn't  print values forever. The first stream calls a static method on `Math` 
+to get a random double. The second stream keeps creating smaller numbers, dividing the 
+previous value by two each time. The output is something like this:
+```
+0.7890654...
+0.2856334...
+0.6311403...
+0.5
+0.25
+0.125
+```
+
+The `Random` class provides a method to get primitives streams of random numbers 
+directly. For example, `ints()` generates an infinite `IntStream` of primitives. 
+It works the same way for each type of primitive stream.
+
+When dealing with `int` or `long` primitives, it is common to count. Suppose that 
+we wanted a stream with the numbers from 1 through 5. We could write this using what 
+we've seen so far:
+```
+IntStream count = IntStream.iterate(1, n -> n + 1).limit(5);
+count.forEach(System.out::print);     // 12345
+```
+
+This code does print out the number 1 - 5. However, it is a lot of code to do 
+something so simple. Java provides a method that can generate a range of numbers:
+```
+IntStream range = IntStream.range(1, 6);
+range.forEach(System.out::print);     // 12345
+```
+
+The first parameter to the `range()` method is _inclusive_, meaning it includes the 
+number. The second parameter is _exclusive_, which means it stops right before that 
+number. There is another method, `rangeClosed()`, which is inclusive on both params:
+```
+IntStream rangeClosed = IntStream.rangeClosed(1, 5);
+rangeClosed.forEach(System.out::println);     // 12345
+```
+
+This time we expressed that we want a closed range or an inclusive range. This method 
+better matches how we express a range of number in plain english.
+
+
+### Mapping Streams
+
+Another way to create a primitive stream is by mapping from another stream type. 
+Table 10.6 shows that there is a method for mapping between any stream types.
+
+**TAble 10.6: Mapping methods between types of streams**
+
+![streams mapping methods](streams_mapping_methods.png)
+
+
+Of course, they have to be compatible types for this to work. Java requires a 
+mapping function to be provided as a parameter, for example:
+```
+Stream<String> objStream = Stream.of("penguin", "fish");
+IntStream intStream = objStream.mapToInt( s -> s.length() );
+```
+
+This function takes an Object, which is a `String` in this case. The function 
+returns an `int`. The function mappings are intuitive here. Tye take the source 
+type and return the target type. In this example, the actual function type is 
+`ToIntFunction`. Table 10.7 show the mapping function names. As we can see, 
+they do what we expect.
+
+**Table 10.7: Function parameter when mapping between types of stream**
+
+![streams mapping methods parameters](streams_mapping_methods_parameters.png)
+
+
+We nee to memorize this two tables, it's not as hard as i might seen. There are 
+pattern in the names if we remember a few rules. For Table 10.6, mapping to the 
+same type we started with is just called `map()`. When return an object stream, 
+the method is `mapToObj()`. Beyond that, it's the name of the primitive type in 
+the map method name.
+
+---
+**Using _flatMap()_**
+
+We can use this approach on primitive streams as well. It works the same way as 
+on a regular Stream, except the method name is different. Here's an example:
+```
+var integerList = new ArrayList<Integer>();
+
+IntStream ints = integerList.stream()
+  .flatMapToInt( x -> IntStream.of(x) );
+
+DoubleStream doubles = integerList.stream()
+  .flatMapToDouble( x -> DoubleStream.of(x) );
+
+LongStream longs = integerList.stream()
+  .flatMapToLong( x -> LongStream.of(x) );
+```
+
+---
+
+Additionally, we can create a `Stream` from a primitive stream. These methods show 
+two ways of accomplishing this:
+```
+private static Stream<Integer> mapping(IntStream stream) {
+  return stream.mapToObj(x -> x);
+}
+
+private static Stream<Integer> boxing(IntStream stream) {
+  return stream.boxed();
+}
+```
+
+The first one uses the `mapToObj()` method we saw earlier. The second one is more 
+succinct. It does not require a mapping function because all it does is autobox 
+each primitive to the corresponding wrapper object. The `boxed()` method exists 
+on all three types of primitive streams.
+
+
+### Using _Optional_ with Primitive Streams
+
+Earlier in the chapter we saw a method to calculate the average of an `int[]`, now 
+is time to see a better way. Now that we know about primitive streams, we can calculate 
+the average in one line.
+```
+var stream = IntStream.rangeClosed(1, 10);
+OptionalDouble optional = stream.average();
+```
+
+The return type is not the `Optional` that we ha've been seen until now. Its is a 
+new type called `OptionalDouble`. Why a separate type? Why not just `Optional<Double>`? 
+The difference is that `OptionalDouble` is for a _primitive_ and `Optional<Double>` is 
+for a `Double` wrapper class. Working with the _primitive optional_ class looks similar 
+to working with the `Optional` class itself.
+```
+optional.ifPresent(System.out::println);                      // 5.5
+System.out.println(optional.getAsDouble());                   // 5.5
+System.out.println(optional.orElseGet( () -> Double.NaN );    // 5.5
+```
+
+The only noticeable difference is that we called `getAsDouble()` rather than `get()`. 
+This make it clear that we are working with a primitive. Also, `orElseGet()` takes a 
+`DoubleSupplier` instead of a `Supplier`.
+
+AS with the primitive streams, there are three types-specific classes for primitives. 
+Table 10.8 shows the minor difference among the three.
+
+**Table 10.8: Optional types for primitive**
+
+![optional types for primitive](optional_types_primitive.png)
+
+A number of stream methods return an optional such as `min()` or `findAny()`. These 
+each return the corresponding optional type. The primitive stream implementations also 
+add two new methods that is good to know. The `sum()` method does not return an optional. 
+If we try to add uyp an empty stream, we will get zero. The `average()` method always 
+returns an `OptionalDouble` since an average can potentially have fractional data for 
+any type.
+
+Let's try an example for a better understanding:
+```
+5: LongStream longs = LongStream.of(5, 10);
+6: long sum = longs.sum();
+7: System.out.println(sum);                                        // 15
+8: DoubleStream doubles = DoubleStream.generate( () -> Math.PI );
+9: OptionalDouble min = doubles.min();                             // runs infinitely
+```
+
+Line 5 creates a stream of long primitives with two elements. Line 6 shows that we don't 
+use an optional to calculate a sum. Line 8 create an infinite stream of double primitives. 
+Line 9 is there to remind us that a question about code tha runs infinitely can appear 
+with primitive streams as well.
+
+
+### Summarizing Statistics
+
+We've learned enough to be able to get the maximum value from a stream of `int` primitives. 
+If the stream is empty, we want to throw an exception.
+```
+private static int max(IntStream ints) {
+  OptionalInt optional = ints.max();
+  return optional.orElseThrow(RuntimeException::new);
+}
+```
+
+This should be old by now. We got an `OptionalInt` because we have an `IntStream`. If 
+the optional contains a value, we return it. Otherwise, we throw an new `RuntimeException`.
+
+Now we want to change the method to take an `IntStream` and return a range. The range is 
+the minimum value subtracted from the maximum value. Both `min()` and `max()` are terminal 
+operations, which means that the use up the stream when they are run. We can't run two 
+terminal operations against the same stream. Since this is a common problem, the primitive 
+stream solve it for us with summary statistics. _Statistic_ is just a big word for a 
+number that was calculated from data.
+```
+private static int range(IntStream ints) { 
+  IntSummaryStatistics stats = ints.summaryStatistics();
+  if (stats.getCount() == 0) throw new RuntimeException();
+  return stats.getMax() - stats.getMin();
+}
+```
+
+Here we asked java to perform many calculations about the stream. Summary statistics 
+include the following:
+- **getCount()**: returns a long representing the number of values
+- **getAverage()**: returns a double representing the average. If the stream is empty, return 0
+- **getSum()**: returns the sum as a double for `DoubleSummaryStream` and long for 
+      `IntSummaryStream` and `LongSummaryStream`.
+- **getMin()**: returns the smaller number (minimum) as a double, int or long, depending 
+      on tye type of the stream. If the stream is empty, returns the largest numeric value 
+      based on tye type.
+- **getMax()**: returns the largest number (maximum) as a double, int, or long depending 
+      on the type of the stream. If the stream is empty, returns the smallest numeric value 
+      base on the type.
+
+
 
 
 ## Working with Advanced Stream Pipelines Concepts
