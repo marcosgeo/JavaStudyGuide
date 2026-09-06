@@ -1353,10 +1353,653 @@ include the following:
       on the type of the stream. If the stream is empty, returns the smallest numeric value 
       base on the type.
 
-
+[back to top](#chapter-10---streams)
 
 
 ## Working with Advanced Stream Pipelines Concepts
 
+In this last stream section we will learn about the relationship between streams and 
+the underlying data, chaining Optional, grouping, and teeing collectors.
+
+### Linking Streams to Underlying Data
+
+What this outputs?
+```
+25: var cats = new ArrayList<String>();
+26: cats.add("Annie");
+27: cats.add("Ripley");
+28: var stream = cats.stream();
+29: cats.add("KC");
+30: System.out.println(stream.count());
+```
+
+The correct answer is 3. Lines 25 - 27 create a `List` with two elements. Line 28 
+requests that a stream be created from that `List`. Since streams area lazily evaluated, 
+this implies that the stream isn't created on line 28. An object of type `Stream` is 
+created and this object knows where to look for the data when it is needed. On line 29, 
+the `List`, `cats`, gets a new element. On line 30, the stream pipeline runs. First, it 
+looks at the source and seeing three elements, returns the value.
+
+### Chaining _Optionals_
+
+By now we are familiar with the benefits of chaining operations in a stream pipeline. A 
+few of the intermediate operations for streams are available for `Optional`.
+
+Suppose we are given an `Optional<Integer>` and asked to print the value, but only if 
+it is a three-digit number. Without functional programming, we could write the following:
+```
+private static void threeDigit(Optional<Integer> optional) {
+  if(optional.isPresent()) {     // outer if
+    var num = optional.get();
+    var string = "" + num;
+    if (string.length() == 3 )     // inner if
+      System.out.println(string)
+  }
+}
+```
+
+It works, but it contains nested if statements. That's extra complexity. Let's try this 
+again with functional programming:
+```
+private static void threeDigit(Optional<Integer> optional) {
+  optional.map( n -> "" + n)           // part 1
+    .filter( s -> s.length() == 3)     // part 2
+    .ifPresent(System.out::println);   // part 3
+}
+```
+
+This is much shorter and more expressive. With lambdas, is common to write all the three 
+parts in a a single line. Here, they are one by line to show what happens with both the 
+functional programming and non-functional programming approaches.
+
+Suppose that we are given an empty Optional. This first approach returns false for the 
+outer if statement. The second approach sees an empty Optional and has both `map()` and 
+`filter()` pass it through. Then `ifPresent()` sees an empty Optional and doesn't call 
+the Consumer parameter.
+
+The next case is where we are given an Optional.of(4). The first approach return false 
+for the inner if statement. The second approach maps the number 4 to "4". The `filter()` 
+then returns an empty Optional since the filter doesn't match, and `ifPresent()` doesn't 
+cal the Consumer parameter.
+
+The final case is where we are given an Optional.of(123). The first approach return true 
+for both if statements. The second approach maps the number 123 to "123". The `filter()` 
+the returns the same Optional, and `ifPresent()` now does call the Consumer parameter.
+
+Now suppose that we wanted to get an `Optional<Integer>` representing the length of the 
+`String` contained in another `Optional`. Simple as this:
+```
+Optional<Integer> result = optional.map(String::length);
+```
+
+What if we had a helper method that did the logic of calculating something for us that 
+returns `Optional<Integer>`? Using map doesn't work:
+```
+Optional<Integer> result = optional
+    .map(ChainingOptional::calculator);     // does not compile
+```
+
+The problem is that `calculator()` return `Optional<Integer>`. The `map()` method adds 
+another `Optional`, giving us `Optional<Optional<Integer>>`. No problem. The solution 
+is to call `flatMap()`, instead.
+```
+Optional<Integer> result = optional
+    .flatMap(ChainingOptionals::calculator);
+```
+
+This one works because `flatMap()` removes the unnecessary layer. In other words, if 
+flattens the result. Chaining calls to `flatMap()` is useful when we want to transform 
+on `Optional` type to another.
+
+---
+**Checked Exceptions and Functional Interfaces**
+
+One thing to note is that most functional interfaces do not declare checked exceptions. 
+This is normally okay. However, it is a problem when working with methods that declare 
+checked exceptions. Suppose that we have a class with a method that throws a checked 
+exception:
+```
+import java.io.*;
+import java.util.*;
+
+public class ExceptionCaseStudy {
+  private static List<String> create() throws IOException {
+    throw new IOException();
+  }
+} 
+```
+
+Now we use it in a stream:
+```
+public void good() throws IOException {
+  ExceptionCaseStudy.create().stream().count();
+}
+```
+
+Nothing new here. The `create()` method throws a checked exception. The calling method 
+handles or declares it. Now, what about this one?
+```
+public void bad() throws IOException {
+  Supplier<List<String>> s = ExceptionCaseStudy::create;     // does not compile
+}
+```
+
+The actual compiler error is as follows:
+```
+unhandled exception type IOException
+```
+
+The problem here is that the lambda to which this method reference expands does not 
+declare an exception. The `Supplier` interface does now allow check exceptions. There 
+are two approaches to get around this problem. On is to catch the exception and turn 
+it into an unchecked exception.
+```
+public void ugly() {
+  Supplier<List<String>> s = () -> {
+    try {
+      return ExceptionCaseStudy.create();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+}
+```
+
+This works. But the code is ugly. On of the benefits of functional programming is that 
+the code is supposed to be easy to read and concise. Another alternative is to create 
+a wrapper method with try/catch.
+```
+private static List<String> createSafe() {
+  try {
+    return ExceptionCaseStudy.create();
+  } catch (IOException e) {
+    throw new RuntimeException(e);
+  }
+}
+```
+
+Now we can use the safe wrapper in out `Supplier` without issue.
+```
+public void wrapped() {
+  Supplier<List<String>> s2 = ExceptionCaseStudy::createSafe;
+}
+```
+
+---
+
+### Using a _Spliterator_
+
+Suppose you buy a bag of food so two children can feed the animals at the petting 
+zoo. To avoid arguments, you have come prepared with an extra empty bag. You take 
+roughly half the food out of the main bag and put it into the bag you brought from 
+home. The original bag still exists with the other half of the food. 
+
+A `Spliterator` provides this level of control over processing. It starts with a 
+`Collection` or a stream -- that is your bag of food. You call `trySplit()` to take 
+some food out of the bag. The rest of the food stays in the original `Spliterator` 
+object.
+
+The characteristics of a `Spliterator` depend on the underlying data source. A 
+Collection data source is a basic Spliterator. By contrast, when using a Stream 
+data source, the Spliterator can be parallel or even infinite. The Stream itself 
+is executed lazily rather than when the Spliterator is created.
+
+Implementing our own Spliterator can ge complicated and luckily we don't have to 
+to frequently. We need to know how to work with some of the common methods declared 
+on this. The simplified methods we need to know are in table 10.9.
+
+**Table 10.9: Spliterator methods**
+
+![spliterator methods](spliterator_methods.png)
+
+
+Let's look at an example where we divide the bag int three:
+```
+12: var stream = List.of(
+13:   "bird-", "bunny-", "cat-", "dog-", "fish-", "lamb-", "mouse-");
+14: Spliterator<String> = originalBagOfFood = stream.spliterator();
+15: Spliterator<String> emmasBag = originalBagOfFood.trySplit();
+16: emmasBag.forEachRemaining(System.out.print);                      // bird-bunny-cat-
+17:
+18: Spliterator<String> jillsBag = originalBagOfFood.trySplit();
+19: jillsBag.tryAdvance(System.out::print);                           // dog-
+20: jillsBag.forEachRemaining(System.out::print);                     // fish-
+21: 
+22: originalBagOfFood.forEachRemaining(System.out::print);            // lamb-mouse
+```
+
+On lines 12 and 13, we define a `List`. Lines 14 and 15 create two `Spliterator` 
+references. The first is the original bag, which contains all seven elements. The 
+second is out split of the origin bag, putting roughly half of the elements at the 
+front into Emma's bag. We then print the three contents of Emma's bag on line 16.
+
+Ou original bag of food now contains four elements. We create a new `Spliterator` on 
+line 18 and put the first two elements into Jill's bag. We use `tryAdvance()` on line 
+19 to output a single element, and the line 20 prints all remaining elements (one left).
+
+We start with seven elements, removed three, and then removed two more. This leaves us 
+with two elements in the original bag created on line 14. These two items are output on 
+line 22.
+
+Now let's try an example with a `Stream`. This is a complicated way to print out 123.
+```
+var originalBag = Stream.iterate( 1, n -> ++n )
+    .spliterator();
+
+Spliterator<Integer> newBag = originalBal.trySplit();
+
+newBag.tryAdvance(System.out::print);     // 1
+newBag.tryAdvance(System.out::print);     // 2
+newBag.tryAdvance(System.out::print);     // 3
+```
+
+Notice that this is an infinite stream. No problem. The `Spliterator` recognizes that 
+the stream is infinite and doesn't attempt to give us half. Instead, `newBag` contains 
+a large number of elements. We get the first three since we call `tryAdvance()` three 
+times. It would be a bad idea call `forEachRemaining()` on a infinite stream!
+
+A `Spliterator` can have a number of characteristics such as CONCURRENT, ORDERED, SIZED, 
+and SORTED. Normally we will see only a straightforward `Spliterator`. For example, our 
+infinite stream was not SIZED.
+
+
+### Collecting Results
+
+Early in the chapter we saw the `collect()` terminal operation. There are many predefined 
+collectors, including the shown in Table 10.10. These collectors are available via static 
+methods on the `Collectors` class. We look at the different types of collectors int the 
+following section. We left out the generic type for simplicity.
+
+**Table 10.10: Collectors methods**
+
+![collectors methods](collectors_methods.png)
+
+
+There is one more collector called `reducing()`.  Its is a general reduction in case 
+all of the previous collectors don't meet our needs.
+
+
+#### Using Basic collectors
+
+Luckily, many of these collectors work the same way. Let's try at an example:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+String result = obMy.collect(Collectors.joining(", "));
+System.out.println(result);     // lions, tiger, bears
+```
+
+Notice how the predefined collectors are in the `Collectors` class rather than the 
+`Collector` interface. This is a common theme, which we saw with `Collection` versus 
+`Collections`.
+
+We pass the predefined `joining()` collector to the `collect()` method. All elements 
+of the stream are then merged into a `String` with the specified delimiter between 
+each element. It is important to pass the `Collector` the collect method. It exists 
+to help collect elements. A `Collector` doesn't do anything on it own.
+
+Another. What is the average length of the three animal names?
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Double result = ohMy.collect(Collectors.averagingInt(String::length));
+System.out.println(result);     // 5.33333333333
+```
+
+The pattern is the same. We pass a collector to `collect()`, and it performs the 
+average for us. This time, we needed to pass a function to tell the collector what 
+to average. We used a method reference, which returns an `int` upon execution. With 
+primitive streams, the result of an average was always a double, regardless of what 
+type is being averaged. For collectors, its is a `Double` since those need an Object.
+
+Often, we'll find ourself interacting with code that was written without streams. This 
+means that it will expect a `Collection` type rather than a `Stream` type. No problem. 
+We can still express ourself using a `Stream` and then convert to a `Collection` at 
+the end. For example:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+TreeSet<String> result = ohMy
+    .filters(s -> s.startsWith("t"))
+    .collect(Collectors.toCollection(TreeSet::new));
+System.out.println(result);     /// [tigers]
+```
+
+This time we have all three parts of the stream pipeline. `Stream.of()` is the source 
+for the stream. The intermediate operation is `filter()`. Finally, the terminal operation 
+is `collect()`, which creates a `TreeSet`. If we didn't cre which implementation of `Set` 
+we got, we could have written `Collectors.toSet()`, instead.
+
+At this point we are able to use all of the `Collectors` in Table 10.10, excepting these: 
+`groupingBy()`, `mapping()`, `partitioningBy()`, `toMap()`, and `teeing()`.
+
+
+#### Collecting into Maps
+
+Code using `Collectors` involving maps can get quite long. We will build it up slowly 
+in order to make sure we understand each example before going on tho the next one. Let's 
+start with a straightforward example to create a map from a stream:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<String, Integer> map = ohMy.collect(
+  Collectors.toMap( s -> s, String::length)
+);
+System.out.println(map);     // {lions=5, bears=5, tigers=6}
+```
+
+When creating a `map`, we need to specify two functions. The first function tells the 
+collector how to create the `key`. In our example, we use the provided `String` as the 
+key. The second function tells the collector how to create the `value`. In our example, 
+whe use the length of the String as the value.
+
+---
+**Note:**
+Returning the same value passed int a lambda is a common operation, so Java provides 
+a method for it. We can rewrite `s -> s` as `Function.identity()`. It is not shorter 
+and may o may no be clearer, we use your own judgment about to use it.
+
+---
+
+
+Now we want to do the reverse and map the length of the animal name to the name itself. 
+Our first incorrect attempt is shown here:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Integer, String> map = ohMy.collect(Collectors.toMap(
+  String::length,
+  k -> k
+));    // bad
+```
+
+Returning this gives an exception similar ot the following:
+```
+Exception in thread "main"
+  java.lang.IllegalStateException: Duplicate key 5
+```
+
+What's wrong? Two of the animal names are the same length. We didn't tell Java what to 
+do. Should the collector choose the first one in encounters? The last one it encounters? 
+Concatenate the two? Since the collector has no idea what to do, it "solves" the problem 
+by throwing an exception and making it our problem. Let's suppose that our requirement 
+is to create a comma-separated `String` with the animal names. We could write this:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Integer, String> map = ohMy.collect(Collectors.toMap(
+  String::length,
+  s -> s,
+  (s1, s2) -> s1 + ", " + s2
+))
+System.out.println(map);              // {5=lions, bears, 6=tigers}
+System.out.println(map.getClass());   // class java.util.HashMap
+```
+The first parameter passed to `toMap()` capture the length of each string and than 
+uses it as `key`. The second parameter simply uses the string `s` as the value to the 
+key. Finally, the third parameter tells to the collect how to do when the `key` already 
+exists. In this case it concatenates the exiting string, `s1` with the other`s2`.
+
+It so happens that the `Map` returned is a `HashMap`. This behavior is not guaranteed. 
+Suppose that we want to mandate that the code return a `TreeMap` instead. We would just 
+add a constructor reference as a parameter:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+TreeMap<Integer, String> map = ohMy.collect(Collector.toMap(
+  String::length,
+  k -> k,
+  (s1, s2) -> s1 + ", " + s2,
+  TreeMap::new
+));
+System.out.println(map);              // {5=lions, bears, 6=tigers}
+System.out.println(map.getClass());   // class java.util.TreeMap
+```
+
+This time we get the type we specified.This code is long but not too complicated.
+
+
+#### Grouping, Partitioning, and Mapping
+
+**Grouping**
+
+Now suppose that we want to get groups of names by their length. We can do that by 
+saying that we want to group by length.
+```
+var ohMy = Stream.of("lions", "tiger", "bears");
+Map<Integer, List<String>> map = ohMy.collect(
+  Collectors.groupingBy(String::length)
+);
+System.out.println(map);     // {5=[lions,bears], 6=[tigers]}
+```
+
+The `groupingBy()` collector tells `collect()` that it should group all of the 
+elements of the stream into a `Map`. The function determines the keys in the `Map`. 
+Each value in the `Map` is a `List` of all entries that match that key. Note that 
+the function we call in `groupingBy()` cannot return `null`, since it's a key! 
+
+If we prefer a `Set` as the value in the map, there is another method signature that 
+lets us pass a _downstream collector_. This is a second collector that does something 
+special with the values.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Integer, Set<String>> map = ohMy.collect(
+  Collectors.groupingBy(
+    String::length,
+    Collectors.toSet()
+  )
+);
+System.out.println(map);     // {5=[lions,bears], 6[tigers]}
+```
+
+We can even change the type of `Map` returned through yet another parameter:
+```
+var ohMy = Stream.of("lions", "tigers", "bears")
+TreeMap<Integer, Set<String>> map = ohMy.collect(
+  Collectors.groupingBy(
+    String::length,
+    TreeMap::new,
+    Collectors.toSet()
+  )
+);
+System.out.println(map);     // {5=[lions,bears], 6=[tigers]}
+```
+
+What if we want to change the type of `Map`returned by leave the type of values alone 
+as a `List`?. The isn't a method for this specifically because it is easy enough to write 
+with the existing ones.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+TreeMap<Integer, List<String>> map = ohMy.collect(
+  Collectors.groupingBy(
+    String::length,
+    TreeMap::new,
+    Collectors.toList()
+  )
+);
+System.out.println(map);
+```
+
+---
+
+**Partitioning**
+
+Partitioning is a special case of grouping. With partitioning, there are only two 
+possible groups: true and false. _Partitioning_ is like splitting a list into two parts.
+
+Suppose that we are making a sign to put outside each animal's exhibit. We have two sizes 
+of signs. On can accommodate names with five or fewer characters. The other is needed for 
+longer names. We can partition the list according to which sign we need.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Boolean, List<String>> map = ohMy.collect(
+  Collectors.partitioningBy( s -> s.length() <= 5 )
+);
+System.out.println(map);     // {false=[tigers], true=[lions,bears]}
+```
+
+Here we pass a `Predicate` with the logic for which group each animal name belongs in. 
+Now, suppose that we've figured out hwo to use a different font, and seven characters 
+can now fit on the smaller sign. We just change the `Predicate`.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Boolean, List<String>> map = ohMy.collect(
+  Collectors.partitioningBy( s -> s.length() <= 7 )
+);
+System.out.println(map);     // {false=[], true=[lions, tigers, bears]}
+```
+Notice that there are still two keys in the map--one for each boolean value. It 
+so happens that one of the values is an empty list, but is is still there. As with 
+`groupingBy()`, we can change the type of `List` to something else.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Boolean, Set<String>> map = ohMy.collect(
+  Collectors.partitioningBy(
+    s -> s.length() <= 7,
+    Collectors.toSet()
+  )
+);
+System.out.println(map);     // {false=[], true=[lions, tigers, bears]}
+```
+
+Unlike `groupingBy()`, we cannot change the type of `Map` that is returned. However, 
+there area only two keys in the map, so does it really matter which `Map` type we use?
+
+Instead of using the downstream collector to specify the type, we can use any of the 
+collectors that we've already saw. For example, we can group by the length of the animal 
+name to see how many of each length we have.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Integer, Long> map = obMy.collect(
+  Collects.groupingBy(
+    String::length,
+    Collectors.counting()
+  )
+);
+System.out.println(map);     // {5=2, 6=1}
+```
+
+---
+**Debugging Complicated Generics**
+
+When working with `collect()`, there are often many levels of generics, making compiler 
+error unreadable. Here are three useful techniques for dealing with this situation:
+- Start over with a simple statement, and keep adding to it. By making one thing at a 
+    time, we will know which code introduced the error.
+- Extract parts of the statement into separate statements. For example, try write 
+    `Collectors.groupingBy(String::length, Collectors.counting());`. It it compiles, 
+    we know that the problem lies elsewhere. If it doesn't compile, we have a much 
+    shorter statement to troubleshoot.
+- Use generic wildcard for the return type of the final statement: for example,
+    `Map<?, ?>`. If that change alone allows the code to compile, we'll know that the 
+    problems lies with the return type not being what we expect.
+
+---
+
+**Mapping**
+
+The `mapping()` collector lets us go down a level and add another collector. Suppose 
+that we wanted to get the first letter of the first animal alphabetically of each length. 
+Why? Perhaps for a random sampling. Yes, this part is not intuitive.
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+Map<Integer, Optional<Character>> map = ohMy.collect(
+  Collectors.groupingBy(
+    String::length,
+    Collector.mapping(
+      s -> s.charAt(0),
+      Collectors.minBy( (a, b) -> a - b)
+    )
+  )
+);
+System.out.println(map);     // {5=Optional[b], 6=Optional[t]}
+```
+This code is not easy to read and, generally, is the most complicated thing that we 
+need to understand. Comparing it to the previous example, we can see that we replaced 
+`counting()` with `mapping()`. It so happens that `mapping()` takes two parameters: 
+the function for the value and hwo to group it further.
+
+We might see collectors used with a static import to make the code shorter. Sometimes 
+even `var` is used for the return value and less indentation is used. This means that 
+we might see something like this:
+```
+var ohMy = Stream.of("lions", "tigers", "bears");
+var map = ohMy.collect(groupingBy(String::length,
+  mapping(s -> s.charAt(0), myBy((a,b) -> a - b))));
+System.out.println(map);     // {5=Optional[b], 6=Optional[t]}
+```
+
+The code does the same thing as in the previous example. This means that is import to 
+recognize the collector names becaus we might not have the `Collectors` class name to 
+call our attention to it.
+
+
+### Teeing Collectors
+
+Suppose we want to return two things. As we've learned, this is problematic with 
+streams because we only get one pass. The summary statistics are good when we want 
+those operations. Luckily, we can use `teeing()` to return multiple values of our 
+own.
+
+First, we define a return type. We'll use a `record` here:
+```
+record Separations(String spaceSeparated, String commaSeparated) {}
+```
+
+Now we write the stream, with special attention to the number oc `Collectors`.
+```
+var list = List.of("x", "y", "z");
+Separations result = list.stream()
+    .collect(Collectors.teeing(
+        Collectors.joining(" "),
+        Collectors.joining(","),
+        (s, c) -> new Separations(s, c)
+    )
+);
+System.out.println(result);
+```
+
+When executed the code prints the following:
+```
+Separations[spaceSeparated=x y z, commaSeparated=x,y,z]
+```
+
+There area three `Collectors` in this code. Two of them are for `joining()` and 
+produce the values we want to return. The third is `teeing()`, which combines the 
+results into the single object we want to return. This way, Java is happy because 
+only one objects is returned, ans we are happy because we don't have to go through 
+the stream twice. 
+
+[back to top](#chapter-10---streams)
+
 
 ## Summary
+
+An `Optional<T>` can be empty or store a value. We can check whether it contains 
+a value with `isPresent()` and `get()` the value inside. We can return a different 
+value with `orElse(T t)` or throw an exception with `orElseThrow()`. There are even 
+three methods that take functional interfaces as parameters: `ifPresent(Consumer c)`, 
+`orElseGet(Supplier s)`, and `orElseThrow(Supplier s)`. There are three optional types 
+for primitives: `OptionalDouble`, `OptionalInt`, and `OptionalLong`. These have the 
+methods `getAsDouble()`, `getAsInt()`, and `getAsLong()`, respectively.
+
+A stream pipeline has three parts. The source is required, and it creates the data in 
+the stream. There can be zero or more intermediate operations, which aren't executed 
+until the terminal operation runs. The first stream class we covered was `Stream<T>`, 
+which takes a generic argument T. The `Stream<T>` class includes many useful intermediate 
+operations including `filter()`, `map()`, `flatMap()`, and `sorted()`. Examples of 
+terminal operation include `allMatch()`, `count()`, and `forEach()`.
+
+Besides the `Stream<T>` class, there are three primitive stream: 
+`DoubleStream`, `IntStream`, and `LongStream`. In addition to the usual `Stream<T>` 
+methods, `IntStream` and `LongStream` have `range()` and `rangeClosed()`. The call 
+`range(1, 10)` on `IntStream` and `LongStream` creates a stream of the primitives from 
+1 to 9. By contrast, `rangeClosed(1, 10)` creates a stream of the primitives from 1 to 
+10. The primitives streams have math operation including ` average()`, `max()`, and 
+`sum()`. The also have `summaryStatistics()` to get man y statistics in one call.
+
+We can use a `Collector` to transform a stream into a traditional collection. We can 
+even group fields to create a complex map in one line. Partitioning works the same way 
+as grouping, except that the keys are always true and false. A partitioned map always has 
+two keys, even if the value is empty for the key. A teeing collector allows us to combine 
+the result ot two other collectors.
+
+We nee to memorize the tables 10.6 and 10.7, or at least be able to spot the 
+incompatibilities, such as type differences. Finally, we have to remember that 
+streams are lazily evaluated. They take lambdas or method references as 
+parameters, which execute later when the method is run.
+
+[back to to](#chapter-10---streams)
