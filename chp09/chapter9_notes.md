@@ -9,14 +9,24 @@ We will discuss the details about Comparator and Comparable. Finally, we will co
 how to create our own classes and methods that use generics so that the same class 
 can be used with many types.
 
+**Topics in this chapter:**
+
 [Common Collections APIs](#using-common-collection-apis)
+
 [Using List Interface](#using-the-list-interface)
+
 [Using Set Interface](#using-the-set-interface)
+
 [Queue and Dequeue Interfaces](#using-the-queue-and-deque-interfaces)
+
 [Using Map Interface](#using-the-map-interface)
+
 [Comparing Collection Types](#comparing-collection-types)
+
 [Sorting Data](#sorting-data)
+
 [Working with Generics](#working-with-generics)
+
 
 ## Using Common Collection APIs
 
@@ -1368,6 +1378,7 @@ There are several differences between `Comparable` and `Comparator`, the Table 9
 listed them for us:
 
 **Table 9.10 - Comparable x Comparator**
+
 ![Comparable vs Comparator](comparable_x_comparator.png)
 
 As always, memorize this table is a must. Let's try to see why this doesn't compile:
@@ -1436,10 +1447,12 @@ The parameters types are omitted to help us focus on the methods. They use many 
 the functional interfaces that we learned in the previous chapter.
 
 **Table 9.11 - Helper static methods for building a Comparator**
+
 ![methods for comparator](comparator_methods_for_build.png)
 
 
 **Table 9.12 - Helper default methods for building a Comparator**
+
 ![default methods for comparator](compararator_def_meth_for_build.png)
 
 
