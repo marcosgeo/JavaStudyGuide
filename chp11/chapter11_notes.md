@@ -1462,6 +1462,462 @@ These statements print the same value at runtime. Which syntax to use is up to u
 
 ### Adding Custom Text Values
 
+What if we want our format to include some custom text values? If we just type them as 
+part of the _format string_, the formatter will interpret each character as a date/time 
+symbol. In the best case, it will throw an exception because the characters contain 
+invalid symbols. Neither is desirable.
+
+One way to address this would be to break the formatter into multiple smaller formatters 
+and then concatenate the result:
+```
+var dt = LocalDateTime.of(2026, Month.SEPTEMBER, 20, 13:15:30);
+
+var f1 = DateTimeFormatter.ofPattern("MMMM dd, yyyy ");
+var f2 = DateTimeFormatter.ofPattern(" hh:mm");
+System.out.println(df.format(f1) + "at" + dt.format(f2));
+```
+
+This prints September, 20, 2026 at 13:15 at runtime.
+
+While this works, it could become difficult if a lot of text values and date symbols 
+are intermixed. Luckily, Java includes a much simples solution. We can _escape_ the text 
+by surrounding it with a pair of single quotes ('). Escaping text instructs the formatter 
+to ignore the values inside the single quotes and just insert them as part of the final 
+value.
+```
+var f = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm");
+System.out.println(dt.format(f));              // September, 20, 2026 at 13:15.
+```
+
+But what if we need to display a single quote in the output, too? This is the fun of 
+escaping characters! Java supports this by putting two single quotes next to each other.
+
+This discussion is concluded with some examples of formats and their output that rely 
+on text values, shown here:
+```
+import java.time.format.DateTimeFormatter;
+
+var g1 = DateTimeFormatter.ofPattern("MMMM dd', Party''s at' hh:mm");
+System.out.println(dt.format(g1));         // September 20, Party's at 13:15
+
+var g2 = DateTimeFormatter.ofPattern("'System format, hh:mm: 'hh:mm");
+System.out.println(dt.format(g2));         // System format, hh:mm: 13:15
+
+var g3 = DateTimeFormatter.ofPattern("'New! 'yyyy', yay!'");
+System.out.println(dt.format(g3));         // New! 2006, yay!
+```
+
+If we don't escape the text values with single quotes, an exception will be thrown 
+at runtime if the text cannot be interpreted as a date/time symbol.
+```
+DateTimeFormatter.ofPattern("The time is hh:mm");     // Exception thrown
+```
+
+This line throws an exception since T is an unknown symbol. We have to be prepared 
+to identify this and also for an incomplete escape sequence.
+```
+DateTimeFormatter.ofPattern("'Time is: hh:mm: ");      // Exception thrown
+```
+
+Failure to terminate an escape sequence will trigger an exception at runtime.
+
+[back to top](#chapter-11-exceptions-and-localization)
 
 
+## Support Internationalization and Localization
+
+Many applications need to work in different countries and with different languages. 
+For example, consider the sentence "The zoo is holding a special event on 4/1/26 to 
+look at animal behaviors." When is the event? In the United States, it is April 1. 
+However, a British reader would interpret as January 4. A British reader might also 
+wonder why we didn't write "behaviours". I we are making a website or program that will 
+be used in multiple countries, we want to use the correct language and formatting.
+
+_Internationalization_ is the process of designing our program so it can be adapted. 
+This involves placing string in a properties file and ensuring that the proper data 
+formatters are used. _Localization_ means supporting multiple locales or geographic 
+regions. We can think of a locales as being like a language and country. Localization 
+includes translating string to different languages. It als includes outputting dates 
+and number in the correct format for that locale.
+
+Initially, our program does not need to support multiples locales. The key is to 
+future-proof our application by using these techniques. This way, when our product 
+becomes successful, we can add support for new languages or regions without rewriting 
+everything. In this section, we look at how to define a locale and use it to format 
+dates, numbers, and strings.
+
+
+### Picking a Locale
+
+In a simple way, a locale is a country and a language but, in fact a locale is 
+more complicated than this simple definition. The `Locale` class is in the `java.util` 
+package. The first useful `Local`to find is the user's current locale.
+```
+import java.util.Locale;
+
+Locale locale = Locale.getDefault();
+System.out.println(locale);
+```
+
+When we run it, it prints `en_US`. It varies according the definition set on the 
+operational system of the computer. Notice the format. First comes the lowercase 
+language code. The language is always required. Then comes an underscore followed 
+by the uppercase country code. The country is optional. 
+
+AS a developer, we often need to write code that selects a locale other than the 
+default one. There are three common ways of doing this. The first is to use the 
+built-in constants in the `Locale` class, available for some common locales.
+```
+System.out.println(Locale.GERMAN);      // de
+System.out.println(Locale.GERMANY);     // de_DE
+```
+
+The first example selects the German language, which is spoken in many countries, 
+including Austria (de_AT) and Liechtenstein(de_LI). The second example selects both 
+German the language and Germany the country. 
+
+Se second way of selecting a `Locale` is to use the constructors to create a 
+new object. We can pass just a language, or both a language and country:
+```
+System.out.println(new Locale("fr"));           // fr
+System.out.println(new Locale("hi", "IN"));     // hi_IN
+```
+
+The first is the language French, and the second is Hindi in India. Of course we 
+don't nee to memorize none of this codes, there is tables to this. Java will let us 
+create a `Locale` with an invalid language or country, such as xx_XX. However, it will 
+not match the `Locale` that we want to use, and our program will not behave as 
+expected.
+
+There's a third way to create a `Locale` that is more flexible. The builder design 
+pattern lets us to se all of the properties that we want an then build the `Locale` 
+at the end. This means that we can specify the properties in any order. The following 
+two `Locale` values both represent pt_BR.
+```
+Locale l1 = new Locale.Builder()
+  .setLanguage("pt")
+  .setRegion("BR")
+  .build();
+
+Locale l2 = new Locale.Builder()
+  .setRegion("BR")
+  .setLanguage("pt")
+  .build();
+```
+
+When testing a program, we might need to use a `Locale` other than our onw computer's 
+default. Whe can do this, only for the context of the program, whit this:
+```
+Locale default = new Locale("fr");
+Locale.setDefault(default);
+System.out.println(Locale.getDefault());     // fr
+```
+
+Of course, this don't change our computer default locale.
+
+
+### Localizing Numbers
+
+Formatting or parsing currency and number values can change depending on the 
+locale. For example, in the United States, the dollar sign is prepended before the 
+value along with a decimal point for values less than one dollar, such as $2.15. In 
+Germany, though, the euro symbol is appended to the value along with a comma for 
+values les than one euro, such as 2,15 &euro;
+
+The `java.text` package includes classes to save the day. The following sections 
+cover how to format numbers, currency, and date based on the locale. The first step to 
+formatting or parsing data is the same: obtain an instance of a `NumberFormat`.  Table 
+11.8 shows the available factory methods. Once we have the `NumberFormat` instance, we 
+can call `format()` to turn a number into a `String`, or we can use `parse()` to 
+turn a `String` into a number.
+
+**Table 11.8: Factory methods to get a NumberFormat**
+
+![factory methods number format](factory_methods_number_format.png)
+
+
+### Formatting Numbers
+
+When we format data, we convert it from a structured object or primitive value 
+into a `String`. Tne `NumberFormat.format()` method formats the given number based 
+on the local associated with the `NumberFormat` object.
+
+For marketing literature, we want to share the average monthly number of visitors 
+to the San Diego Zoo. The following shoes printing out the same number in three
+different locales:
+```
+import java.text.NumberFormat;
+
+int attendeesPerYear = 3_200_000;
+int attendeesPerMonth = attendeesPerYear / 12;
+
+var us = NumberFormat.getInstance(Locale.US);
+System.out.println(us.format(attendeesPerMonth));     // 266,666
+
+var gd = NumberFormat.getInstance(Locale.GERMANY);
+System.out.println(gr.format(attendeesPerMonth));     // 266.666
+
+var ca = NumberFormat.getInstance(Locale.CANADA_FRENCH);
+System.out.println(ca.format(attendeesPerMonth))      // 266 666
+```
+
+This shows how out U.S., German, and French Canadian guests can all see the same 
+information in the number format they are accustomed to using. In practice, we would 
+just call `NumberFormat.getInstance()` and rely on the user's default locale to 
+format the output.
+
+Formatting currency works the same way.
+```
+double price = 58;
+var myLocale = NumberFormat.getCurrencyInstance();
+System.out.println(myLocale.format(price));
+```
+
+When run with a default locale of en_US for the United States, this code outputs 
+$48.00. On the other hand, when run with the default local of en_GB for Great Britain, 
+it outputs £ 48.00.
+
+---
+
+In the real world, we use `int` or `BigDecimal` for money, not double. Doing math 
+on amounts with `double` is dangerous because the values are stored as floating-point 
+number. Our boss won't appreciate if we lose pennies or fractions of pennies during 
+transactions.
+
+---
+
+Finally, let's see same examples that show formatting percentages:
+```
+double successRate = 0.802;
+var us = NumberFormat.getPercentInstance(Locale.US);
+System.out.println(us.format(successRate));          // 80%
+
+var gr = NumberFormat.getPercentageInstance(Locale.GERMANY);
+System.out.println(gr.format(successRate));         // 80 %
+```
+
+Not much different, but we should at least be aware that the ability to print 
+a percentage is locale-specific.
+
+
+### Parsing Numbers
+
+When we parse data, we convert in from a `String` to a structured object or 
+primitive value. The `NumberFormat.parse()` method accomplishes this and takes the 
+locale into consideration. For example, if the locale is English/United States (en_US) 
+and the number contains commas, the commas are treated as formatting symbols. If the 
+locale relate toa country or language that uses commas as a decimal separator, the 
+comma is treated as a decimal point.
+
+Let's look at an example. The following code parses a discounted ticket price with 
+different locales. The `parse()` method throws a checked `ParseException`, so we've 
+to make sure to handle or declare it in our own code.
+```
+String s = "40.45";
+
+var en = NumberFormat.getInstance(Locale.US);
+System.out.println(en.parse(s));      // 40.45
+
+var fr = NumberFormat.getInstance(Locale.FRANCE);
+System.out.println(fr.parse());       // 40
+```
+
+In the United States, a dot (.) is part of a number, and the number is parsed 
+as we might expect. France does not use a decimal point to separate numbers. Java 
+parses it as formatting character, and it stops looking at the res of the number. 
+The lesson is to make sure that we parse using the right locale.
+
+The `parse()` method is also used for parsing currency. For example, we can read 
+in the zoo's monthly income from ticket sales:
+```
+String income = "$92,807.99";
+var cf = NumberFormat.getCurrencyInstance();
+double value = (Double) cf.parse(income);
+System.out.println(value);      // 92807.99
+```
+
+The currency string "$92,807.99" contains a dollar sign and a comma. The parse 
+method strips out the characters and converts the value to a number. The return value 
+of parse is a `Number` object. `Number` is the parent class of all the `java.lang`
+wrapper classes, so the return value can be cast to its appropriate data type. The 
+`Number` is cast to a `Double`and then automatically unboxed into a `double`.
+
+
+### Formatting with _CompactNumberFormat_
+
+`CompactNumberFormat` is similar to `DecimalFormat`, both inherits from `NumberFormat`, 
+but is is designed to be used in places where print space may be limited. It is opinionated 
+in the sense that it picks a format foe us, and locale-specif in that output can change 
+depending on location.
+
+Consider the following sample code that applies a `CompactNumberFormat` five times to 
+two locales, using a _static import_ for `Style` (an enum with SHORT or LONG);
+```
+import static java.text.NumberFormat.Style;
+
+var formatters = Stream.of(
+  NumberFormat.getCompactNumberInstance(),
+  NumberFormat.getCompactNumberInstance(Locale.getDefault(), Style.SHORT),
+  NumberFormat.getCompactNumberInstance(Locale.getDefault(), Style.LONG),
+  NumberFormat.getCompactNumberInstance(Locale.GERMAN, Style.SHORT),
+  NumberFormat.getCompactNumberInstance(Locale.GERMAN, Style.LONG),
+  NumberFormat.getNumberInstance()
+);
+
+formatters.map( s -> s.format(7_123_456)).forEach(System.out::println);
+```
+
+The following is printed by this code when run in the en_US locale (line breaks 
+for readability):
+```
+7M
+7M
+7 million
+
+7 Mio.
+7 Millionen
+
+7,123,456
+```
+
+Notice that the first two lines are the same. If we don't specify a style, SHORT 
+is used by default. Next, notice that the values except the last one (which doesn't 
+use a compact number formatter) are truncated. There's a reason it's called a compact 
+number formatter. Also, notice that the short form uses common labels for large values, 
+such as K for thousand.
+
+Using the same formatters, let's try another example:
+```
+formatters.map( s-> s.format(314_900_000) ).forEach(System.out::println);
+```
+
+This prints the following when run in the en_US locale:
+```
+315M
+315M
+315 million
+
+315 Mio.
+315 Millionen
+
+314,900,000
+```
+
+Notice that the third digit is automatically rounded up for the entries that use 
+a `CompactNumberFormat`. The following summarizes the rules for `CompactNumberFormat`:
+- First it determines the highest range for the number, such as thousand (K), 
+    million (M), billion (B), or trillion (T).
+- I then returns up tho the first three digits of the range, rounding the last 
+    digit as needed.
+- Finally, it prints an identifier. If SHORT is used, a symbols is returned. 
+    If LONG is used, a space followed by a word is returned. 
+
+We need to make sure we understand the difference between the SHORT and LONG formats 
+and common symbols like M for million.
+
+
+### Localizing Dates
+
+Like numbers, date formats can vary by locale. Table 11.9 shows methods used to 
+retrieve an instance of a `DateTimeFormatter` using the default locale.
+
+**Table 11.9: Factory methods to get DateTimeFormatter**
+
+![factory methods to date/time formatter](factory_methods_datetime_formatter.png)
+
+
+Each method in the table takes a `FormatStyle` parameter (or two) with possible 
+values SHORT, MEDIUM, LONG, and FULL. We do not to know the format of each of these 
+styles. What if we need a formatter for a specific locale? Easy enough, we just 
+append `withLocale(locale)` to the method call.
+
+Let's put it all together. Take a look at the following code snippet, which relies 
+on a static import for the `java.time.format.FormatStyle.SHORT` value:
+```
+import static java.time.format.FormatStyle.SHORT;
+
+public static void print(DateTimeFormatter dtf,
+    LocalDateTime dateTime, Locale locale) {
+  System.out.println(
+    dtf.format(dateTime) + "---" + dtf.withLocale(locale).format(dateTime))
+}
+
+public static void main(String[] args) {
+  Locale.setDefault(new Locale("en", "US"));
+  var italy = new Locale("it", "IT");
+  var dt = LocalDateTime.of(2026, Month.SEPTEMBER, 20, 15, 12, 34);
+
+  // 09/20/26 --- 20/09/26
+  print(DateTimeFormatter.ofLocalizedDate(SHORT), dt, italy);
+
+  // 3:12 PM --- 15:12
+  print(DateTimeFormatter.ofLocalizedTime(SHORT), dt, italy);
+
+  // 09/20/26, 3:12 PM --- 20/09/26, 15:12
+  print(DateTimeFormatter.ofLocalizedDateTime(SHORT, SHORT), dt, italy);
+}
+```
+
+First we establish en_US as the default locale, with it_IT as the requested locale. 
+We then output each value using the two locales. As we can see, applying a locale 
+has a big impact on the built-in date and time formatters.
+
+
+### Specifying a Locale Category
+
+When we call `Locale.setDefault()` with a locale, several display and formatting 
+options are internally selected. If we require finer-grained control of the default 
+locale, Java subdivides the underlying formatting options int distinct categories 
+with the `Locale.Category` enum.
+
+The `Locale.Category` enum is a nested element in `Locale` that supports distinct 
+locales for displaying and formatting data. We need to be familiar with the two enum 
+values in Table 11.10
+
+**Table 11.10: Locale.Category values**
+
+![locale category values](locale_category_values.png)
+
+
+When we call `Locale.setDefault()` with a locale, the DISPLAY and FORMAT are 
+set together. Let's take a look at an example:
+```
+10: public static void printCurrency(Locale locale, double money) {
+11:   System.out.println(
+12:     NumberFormat.getCurrencyInstance().format(money) + ", " + locale.getDisplayLanguage()
+13:   );
+14: }
+15: 
+16: public static void main(String[] args) {
+17:   var spain = new Locale("es", "ES");
+18:   var money = 1.23;
+19: 
+20:   // print with default locale
+21:   Locale.setDefault(new Locale("en", "US"));
+22:   printCurrency(spain, money);                 // $1.23, Spanish
+23:      
+24:   // print with selected locale display
+25:   Locale.setDefault(Category.DISPLAY, spain);
+26:   printCurrency(spain, money);                 // $1.23, español
+27:
+28:   // print with selected locale format
+29:   Locale.setDefault(Category.FORMAT, spain);
+30:   printCurrency(spain, money);                 // 1,23 €, español
+31: }
+```
+
+The code prints the same data three times. First it prints the language of the 
+`spain` and `money` variables using the locale en_US. Then int prints it using the 
+DISPLAY category of es_ES, while the FORMAT category remains en_US. Finally, it 
+prints the data using both categories set to es_ES.
+
+We don't need to memorize the various display and formatting options for each category. 
+We just need to know that we can set parts of the locale independently. We need also 
+know that calling `Locale.setDefault(us)` after the previous code snipped will change 
+both locale categories to en_US.
+
+[back to top](#chapter-11-exceptions-and-localization)
+
+
+## Loading Properties with Resource Bundles
 
