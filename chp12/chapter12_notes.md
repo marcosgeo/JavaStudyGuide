@@ -650,3 +650,128 @@ any packages in the zoo.animal.feeding module.
 
 ### Opening a Package
 
+Java allows caller to inspect and call code at runtime with a technique called 
+_reflection_. This is a powerful approach that allows calling code that might not 
+be available at compile time. It can even be used to subvert access control! We do 
+not need to know how to write code using reflection for the exam.
+
+The `opens` directive is used to enable reflection of a package within a module. 
+We only nee to be aware that the `opens` directive exists rather than understanding 
+it in detail for the exam.
+
+Since reflection can be dangerous, the module system requires developers to 
+explicitly allow reflection in the module declaration if the want calling modules 
+to be allowed to use it. The following shows how to enable reflection for two 
+packages in the `zoo.animal.talks` module.
+```
+module zoo.animal.talks {
+  opens zoo.animal.talks.schedule;
+  opens zoo.animal.talks.media to zoo.staff;
+}
+```
+
+The first example allows any module using this one to use reflection. The second 
+example only fives that privilege to the `zoo.staff` module. There are two more 
+directive we need to know, `provides` and `uses`, which are covered in the 
+following section.
+
+---
+**Opening an Entire Module**
+
+In the previous example, we opened two packages in the zoo.animal.talks module, 
+but suppose we instead wanted to open all packages for reflection. No problem, we 
+can use the `open module` modifier, rather than the `opens` directive.
+```
+open module zoo.animal.talks {
+
+}
+```
+
+With this module modifier, Java knows we want all packages in the module to be open. 
+What happens if we apply both together?
+```
+open module zoo.animal.talks {
+  opens zoo.animal.talks.schedule;   // does not compile
+}
+```
+
+This does not compile because a modifier that uses the `open` modifier is not 
+permitted to use the `opens` directive. After all, the packages are already open!
+
+
+[back to top](#chapter-12-modules)
+
+
+## Creating a service
+
+In this section, we will learn how to create a service. A _service_ is composed 
+of an interface, any classes the interface references, and a way of looking up 
+implementations of the interface. The implementations are not part ot the service.
+
+We will be using a tour application in this section. It has four modules shown in 
+Figure 12.13. In this example, the `zoo.tours.api` and `zoo.tours.reservations` 
+modules make up the service since they consist of the interface and lookup 
+functionality.
+
+![modules in tour application](service_modules_tour_application.png)
+
+**Figure 12.13: modules in the tour application**
+
+We are not required to have four separate modules. The separation here is just 
+to illustrate the concepts. For example, the service provider interface and service 
+locator could be in the same module.
+
+
+### Declaring the Service Provider Interface
+
+First, the `zoo.tours.api` module define a Java object called `Souvenir`. It is 
+considered part of the service because it will be referenced by the interface.
+```
+// Souvenir.java
+package zoo.tours.api;
+
+public record Souvenir(String description) {}
+```
+
+Next, the module contains a Java interface type. This interface is called the 
+_service provider interface_ because it specifies what behavior our service will 
+have. In this case, it is a simple API with three methods.
+```
+// Tour.java
+package zoo.tours.api;
+
+public interface Tour {
+  String name();
+  int length();
+  Souvenir getSouvenir();
+}
+```
+
+All three methods use the implicit public modifier. Since we are working with 
+modules, we also need to create a `module-info.java` file so our module definition 
+export the package containing the interface.
+```
+// module-info.java
+module zoo.tours.api {
+  exports zoo.tour.api;
+}
+```
+
+Now that we have both files, we can compile and package this module.
+```
+javac -d api \
+  api/zoo/tours/api/*.java api/module-info.java
+
+
+jar -cvf mods/zoo.tours.api.jar -C api/ .
+```
+
+A service provider "interface" can be an abstract class rather than an actual 
+interface. The service, includes the service provider interface and supporting 
+classes it references. The service al includes the lookup functionality, which 
+will be defined next.
+
+
+### Creating a Service Locator
+
+
