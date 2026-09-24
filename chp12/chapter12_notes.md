@@ -774,4 +774,451 @@ will be defined next.
 
 ### Creating a Service Locator
 
+To complete our service, we need a service locator. A _service locator_ can find 
+any classes that implement a service provider interface.
+
+Luckily, Java provides a `ServiceLoader` class to help with this task. We pass the 
+service provider interface type to its `load()` method, and Java will return any
+implementation services it can find. The following class shows it in action:
+```
+// TourFinder.java
+package zoo.tours.reservations;
+
+import java.util.*;
+import zoo.tours.api.*;
+
+public class TourFinder {
+  public static Tour findSingleTour() {
+    ServiceLoader<Tour> loader = ServiceLoader.load(Tour.class);
+    four (Tour tour : loader)
+      return tour;
+    return null;
+  }
+  public static List<Tour> findAllTours() {
+    List<Tour> tours = new ArrayList<>();
+    ServiceLoader<Tour> loader = ServiceLoader.load(Tour.class);
+    for (Tour tour : loader)
+      tours.add(tour);
+    return tours;
+  }
+}
+```
+
+As we can see, two lookup method were provided. The first is a convenience method 
+if we are expecting exactly one `Tour` to be returned. The other returns a `List`, 
+which accommodate any number of service providers. At runtime, there may be many 
+service provider (or none) that are found by the service locator. The `ServiceLoader` 
+call is a relatively expensive, so, in real applications it is best to cache the 
+results.
+
+Our module definition export the package with the lookup class `TourFinder`. It 
+requires the service provider interface package. It also has the `uses` directive 
+since it will be looking up a service.
+```
+// module-info.java
+module zoo.tours.reservations {
+  exports zoo.tours.reservations;
+  requires zoo.tours.api;
+  uses zoo.tours.api.Tour;
+}
+```
+
+Here `requires` and `uses` are needed, once for compilation and one for lookup. 
+Finally, we compile and package the module.
+```
+javac -p mods -d reservations \
+  reservations/zoo/tours/reservations/*.java
+  reservations/module-info.java
+
+
+jar -cvf mods/zoo.tours.reservations.jac -C reservations/ .
+```
+
+Now that we have the interface and lookup logic, we have completed our service.
+
+---
+**Using _ServiceLoader_**
+
+There are two common methods in `ServiceLoader` that we need to know. The 
+declaration is as follows, _sans_ the full implementation:
+```
+public final class ServiceLoader<S> implements Iterable<S> {
+  
+  public static<S> ServiceLoader<S> load(Class<S> service) { ... }
+
+  public Stream<Provider<S>> stream() { ... }
+
+  // additional methods
+}
+```
+
+As we already saw, calling `ServiceLoader.load()` returns an object that we can 
+loop through normally. However, requesting a `Stream` gives us a different type. 
+The reason for this is that a `Stream` controls when elements are evaluated. 
+Therefore, a `ServiceLoader` returns a `Stream` of `Provider` objects. We have 
+to call `get()` to retrieve the value we wanted out of each `Provider`, such as 
+in the example:
+```
+ServiceLoader.load(Tour.class)
+  .stream()
+  .map(Provider::get)
+  .mapToInt(Tour::length)
+  .max()
+  .ifPresent(System.out::println);
+```
+
+---
+
+
+### Invoking from a Consumer
+
+Next up is to call the service locator by a consumer. A _consumer_ (or _client_) 
+refers to a module that obtains adn uses a service. Once the consumer has acquired 
+a service via the service locator, it is able to invoke the methods provided by 
+the service provider interface.
+```
+// Tourist.java
+package zoo.visitor;
+
+import java.util.*;
+import zoo.tours.api.*;
+import zoo.tours.reservations.*;
+
+public class Tourist {
+  public static void main(String[] args) {
+    Tour tour = TourFinder.findSingleTour();
+    System.out.println("Single tour: " + tour);
+
+    List<Tour> tours = TourFinder.findAllTours();
+    System.out.println("# tours: " + tours.size());
+  }
+}
+```
+
+Our module definition doesn't need to know anything about the implementations 
+since the `zoo.tours.reservations` module is handling the lookup.
+```
+// module-info.java
+module zoo.visitor {
+  requires zoo.tours.api;
+  requires zoo.tours.reservations;
+}
+```
+
+This time, we get to run a program after compiling an packaging.
+```
+javac -p mods -d visitor \
+  visitor/zoo/visitor/*.java visitor/module-info.java
+
+jar -cvf mods/zoo/visitor.jar -C visitor/ .
+
+java -p mods -m zoo.visitor/zoo.visitor.Tourist
+```
+
+The program outputs the following:
+```
+Single tour: null
+# tour: 0
+```
+
+We haven't written a class that implements the interface yet, so we don't have 
+a service to consume.
+
+
+### Adding a Service Provider
+
+A _service provider_ is the implementation of a service provider interface. As 
+we saw earlier, at runtime is is possible to have multiple implementation classes 
+or modules. We will stick to one here for simplicity.
+
+Our service provider is the `zoo.tours.agency` package because we've outsourced 
+the running of tours to a third party.
+```
+// TourImple.java
+package zoo.tours.agency;
+
+import zoo.tours.api.*;
+
+public class TourImpl implements Tour {
+  public String name() {
+    return "Behind the Scenes";
+  }
+  public int length() {
+    return 120;
+  }
+  public Souvenir getSouvenir() {
+    return new Souvenir("stuffed animal");
+  }
+}
+```
+
+We need a module-info.java file to create a module:
+```
+module zoo.tours.agency {
+  requires zoo.tours.api;
+  provides zoo.tours.api.Tour with zoo.tours.agency.TourImpl;
+}
+```
+
+The module declaration requires the module containing the interface as a dependency. 
+We don't export the packages that implements the interface since we don't want callers 
+referring to it directly. Instead, we use the provides directive. This allows us to 
+specify that we provide an implementation of the interface with a specific 
+implementation class. The syntax looks like this:
+```
+provides interfaceName with className;
+```
+
+We have not exported the package containing the implementation. Instead we have 
+made the implementation available to a service provider using the interface. 
+
+Finally, we compile it and package it up.
+```
+javac -p mods -d serviceProvider \
+  serviceProvider/zoo/tours/agency/*.java serviceProvider/module-info.java
+```
+
+Now comes the cool part. We can run the Java program again.
+```
+java -p mods -m zoo.visitor/zoo.visitor.Tourist
+```
+
+This time, we see the an output like this:
+```
+Single tour: zoo.tours.agency.TourImpl@1936f0f5
+# tours: 1
+```
+
+Notice how e didn't recompile the `zoo.tours.reservations` or `zoo.visitor` 
+package. The service locator was able to observe that there was now a service 
+provider implementation available and find it for us.
+
+This is useful when we have functionality that changes independently of the 
+rest of the code base. For example, we might have custom reports or logging.
+
+
+### Reviewing Directives and Services
+
+Table 12.4 summarizes what we've covered in this section. We need to learn very 
+well what is needed when each artifact is in a separate module and grasp firmly 
+the concepts.
+
+**Table 12.4: services and respective directives** 
+
+![services and respective directives](modules_directives.png)
+
+
+Table 12.5 list all the directives we need to know.
+
+**Table 12.5: directives usage for packages**
+
+![directives usage](modules_directives_usage.png)
+
+
+[back to top](#chapter-12-modules)
+
+
+## Discovering modules
+
+Until now, we've been working with modules that we wrote. Even the classes built 
+int the JDK are modularized. In this section, we will known how to use commands 
+to learn about modules.
+
+We do not need to known the output of the commands, we need to know the syntax of 
+the commands and what they do. The output is included only when it is necessary for 
+a better understanding of the command, otherwise, it is omitted.
+
+
+### Identifying Built-in Modules
+
+The most important module to known is `java.base`. It contains most of the 
+packages we have been learning about in this book. In fact, it is so important 
+that we don't even have to use the `requires` directive; it is available to all 
+modular applications. Our `module-info.java` file will still compile if we 
+explicitly require `java.base`. However, it is redundant, so is better to omit.
+Table 12.6 lists some common modules and what they contain.
+
+**Table 12.6: Common modules**
+
+![common module](modules_common.png)
+
+It is important to recognize the names of modules supplied by the JDK. We don't 
+need to know the names by heart, but we need to be able to pick them out of a lineup.
+
+For our daily life, we need to know that modules names beginning with `java` are 
+for API's that will use most, and beginning with `jdk` for APIs that are specific 
+to the JDK. Table 12.7 lists all the modules that bigint with `java`.
+
+**Table 12.7: modules prefixed with 'java'**
+
+![modules prefixed with java](modules_prefixed_with_java.png)
+
+
+Table 12.8 lists all the modules that begin with `jdk`. We don't have to memorize 
+them, but is good to recognize them.
+
+**Table 12.8: modules prefixed with 'jdk'**
+
+![modules prefixed with jdk](modules_prefixed_with_jdk.png)
+
+
+### Getting Details with _java_
+
+The `java` command has three module-related options. One describes a module, 
+another list the available modules, and the third shows the module resolution logic.
+
+#### Describing a Module
+
+Suppose we are give the `zoo.animal.feeding` module JAR file and want to know 
+about its module structure. We could "unjar" it and open the `module-info.file`. 
+This would show us that the module export one package and doesn't explicitly 
+require any modules.
+```
+module zoo.animal.feeding {
+  exports zoo.animal.feeding;
+}
+```
+
+However, there is an easier way. The `java` command has an option to describe 
+a module. The following two commands are equivalent:
+```
+java -p mods -d zoo.animal.feeding
+
+java -p mods --describe-module zoo.animal.feeding
+```
+
+Each prints information about the module. For example, it might print this:
+```
+zoo.animal.feeding file:///absolutePath/mods/zoo.animal.feeding.jar
+exports zoo.animal.feeding
+requires java.base mandated
+```
+
+The first line is the module we asked about: `zoo.animal.feeding`. The second 
+line starts with information about the module. In our case, it is the same package 
+exports statement we had in the module declaration file.
+
+On the third line, we see `requires java.base mandated`. Since the `base` module 
+is special, it is automatically added as a dependency to all modules. This module 
+has frequently used packages like `java.util`. That's what the `mandated` is about. 
+We get `java.base` regardless of whether we asked for it.
+
+In classes, the `java.lang` package is automatically imported whether we type it 
+or not. The `java.base` module works the same way. It is automatically available 
+to all other modules.
+
+---
+**More about Describing Modules**
+
+We only need to know how to run `--describe-module` for the exam rather than 
+interpret the output. However, we might encounter some surprises whe experimenting 
+with this feature, so it's important to go a little deeper here.
+
+Assuming the following are the contents of `module-info.java` in `zoo.animal.care`:
+```
+module zoo.animal.care {
+  export zoo.animal.care.medical to zoo.staff;
+  requires transitive zoo.animal.feeding;
+}
+```
+
+Now we have the command to describe the module and the output.
+```
+java -p mods -d zoo.animal.care
+
+
+zoo.animal.care file:///absolutePath/mods/zoo.animal.care.jar
+requires zoo.animal.feeding transitive
+requires java.base mandated
+qualified exports zoo.animal.care.medical to zoo.staff
+contains zoo.animal.care.details
+```
+
+The first line of the output is the absolute path of the module. The two 
+requires lines should look familiar as well. The first is the module-info, and 
+the other is to all modules. Next comes something new. The `qualified exports` 
+is the full name of the package we are exporting to a specific module.
+
+Finally, the `contains` means that there is a package in the module that is not 
+exported at all. This is true. Our module has two packages, and one is available 
+on to code inside the module.
+
+---
+
+#### Listing Available Modules
+
+In addition to describing modules, we can use the `java` command to list the 
+modules that are available. The simplest form lists the modules thar are part 
+of the JDK.
+```
+java --list-modules
+```
+
+When we ran int, the output went on for 70 lines and looked like this:
+```
+java.base@17
+java.compile@17
+java.datatransfer@17
+...
+```
+
+This s a listing of all the modules that came with Java and their version 
+numbers. We can tell that we were using Java 17 when testing this example.
+
+We can use this command with custom code. Let's try again with the directory 
+containing our zoo modules.
+```
+java -p mods --list-modules
+```
+
+This time 78 lines are displayed. 70 for the built-in modules plus the 8 we've 
+created in this chapter. Two of the custom lines look like this:
+```
+zoo.animal.care file:///absolutePath/mods/zoo.animal.care.jar
+zoo.animal.feeding file:///abasolutePath/mods/zoo.animal.feeding.jar
+```
+
+Since these are custom modules, we get a location on the file system. If the 
+project had a module version number, it would have both the version number 
+and the file system path.
+
+**java --list-modules exits as soon as it prints the observable modules.**
+**It does not run the program.**
+
+
+#### Showing Module Resolution
+
+If listing the modules doesn't give us enough information, we can also use 
+the `--show-module-resolution` option. We can think of it as a way of debugging 
+modules. It spits out a lot of output when the program starts up. Then it runs 
+the program.
+```
+java --show-module-resolution
+  -p feeding
+  -m zoo.animal.feeding/zoo.animal.feeding.Task
+```
+
+Luckily, we don't need to understand this output. But, having seen it will 
+make it easier to remember. Here's a snippet of the output.
+```
+root zoo.animal.feeding file:///absolutePath/feeding/
+java.base binds java.desktop jrt:/java.desktop
+java.base binds jdk.jartool jrt:/jdk.jartool
+...
+jdk.security.auth requires java.naming jrt:/java.naming
+jdk.security.auth requires java.security.jgss jrt:/java.security.jgss
+---
+All fed!
+```
+
+It starts by listing the root module. That's the one we are running: 
+`zoo.animal.feeding`. Then it lists many lines of packages included by the 
+mandatory `java.base` module. After a while, it lists modules that have 
+dependencies. Finally, it outputs the result of the program: All fed!.
+
+
+### Describing with _jar_
+
+
+
 
