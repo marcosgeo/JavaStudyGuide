@@ -22,6 +22,12 @@ we show how to create a runtime image.
 
 [Diving into the Module Declaration](#diving-into-the-module-declaration)
 
+[Discovering Modules](#discovering-modules)
+
+[Comparing Types of Modules](#comparing-types-of-modules)
+
+[Migrating an Application](#migrating-an-application)
+
 
 ---
 
@@ -1219,6 +1225,545 @@ dependencies. Finally, it outputs the result of the program: All fed!.
 
 ### Describing with _jar_
 
+Like the `java` command, the `jar` command can describe a module. These commands 
+are equivalent:
+```
+jar -f mods/zoo.animal.feeding.jad -d
+
+jar --file mods/zoo.animal.feeding.jar --describe-module
+```
+
+The output is slightly different from when we used the `java` command to describe 
+the modules. With `jar`, it outputs the following:
+```
+zoo.animal.feeding.jar:file:///absolutePath/mods/zoo.animal.feeding.jar
+/!module-info.class
+export zoo.animal.feeding
+requires java.base mandated
+```
+
+The JAR version includes the `module-info.class` in the filename, which is not 
+a particularly significant difference in the scheme of things. We do not know 
+this difference, we just need to know that both commands can describe a module.
+
+
+### Learning about Dependencies with _jdeps_
+
+The `jdeps` command gives us information about dependencies within a module. Unlike 
+describing a module, it looks at the code in addition to the module declaration. This 
+tell us what dependencies are actually used rather than simple declared. Luckily, we 
+do need to memorize all the options, we are expected to understand how to use `jdeps` 
+with projects that have not yer been modularized to assist in identifying dependencies 
+and problems.
+```
+// Animatronic.java
+package zoo.dinos;
+
+import java.time.*;
+import java.util.*;
+import sun.misc.Unsafe;
+
+public class Animatronic {
+  private List<String> names;
+  private LocalDate visitDate;
+
+  public Animatronic(List<String> names, LocalDate visitDate) {
+    this.names = names;
+    this.visitDate = visitDate;
+  }
+  public void unsafeMethod() {
+    Unsafe unsafe = Unsafe.getUnsafe();
+  }
+}
+```
+
+This example is silly. It uses a number of unrelated classes. The idea of having 
+dinosaurs in a zoo ins't beyond the realm of possibility, the Bronx Zoo did have 
+electronic moving dinosaurs for a while.
+
+Now we can compile this file. We have to notice that there is no `module-info.java` 
+file. That is because we aren't creating a module. We are looking into what dependencies 
+we will need when we do modularize this JAR.
+```
+javac zoo/dinos/*.java
+```
+
+Compiling works, but it gives us some warnings about `Unsafe` being an internal API. 
+We do not have to worry now, it will be discussed in a shortly. Next we create a JAR file:
+```
+jar -cvf zoo.dino.jar .
+```
+
+We can run the `jdeps` command against this JAR to learn about its dependencies. 
+First, let's run the command without any options. On the first two lines, the command 
+prints the modules that we would need to add with a _requires_ directive to migrate 
+to the module system. It also prints a table showing what packages are used and what 
+modules they correspond to.
+```
+jdeps zoo.dino.jar
+
+zoo.dino.jar -> java.base
+zoo.dina.jar -> jdk.unsupported
+  zoo.dinos  -> java.lang  java.base
+  zoo.dinos  -> java.time  java.base
+  zoo.dinos  -> java.util  java.base
+  zoo.dinos  -> sun.misc   JDK internal API (jdk.unsupported)
+```
+
+Notice that `java.base` is always included. It also says which models contain classes 
+used by the JAR. If we run in `summary` mode, we only see just the first part where 
+`jdeps`list the modules. Thre are two formats for the `summary` flag:
+```
+jdeps -s zoo.dino.jar
+jdeps --summary zoo.dino.jar
+
+zoo.dino.jar -> java.base
+zoo.dino.jar -> jdk.unsupported
+```
+
+For a real project, the dependency list could include dozens or even hundreds of 
+packages. It's useful to see the summary of just the modules. This approach also 
+makes it easier to see whether `jdk.unsupported` is in the list.
+
+There is also a `--module-path` option that we can use to look for modules outside 
+the JDK. Unlike other commands, there is no short form for this option on `jdeps`.
+
+---
+
+the `jdk.unsupported` module contains internal libraries that developers in previous 
+version of Java were discourage from using, although many people ignored this warning 
+and used. We should not reference it, as it may disappear in future versions of Java.
+
+---
+
+
+### Using the _--jdk-internals_ Flag
+
+The `jdeps` command has an options to provide details about these unsupported APIs. 
+The output look something like this:
+```
+jdeps --jdk-internals zoo.dino.jar
+
+zoo.dino.jar -> jdk.unsupported
+  zoo.dinos.Animatronic -> sun.misc.Unsafe
+    JDK internal API (jdk.unsupported)
+
+Warning: <omitted warning>
+
+JDK Internal AP    Suggested Replacement
+_______________    _____________________
+
+sun.misc.Unsafe    See http://openjdk.java.net/jeps/260
+```
+
+The `--jdk-internals` options list any class we are using that call an internal 
+API along with which API. At th end, it provides a table suggesting what we should 
+do about it. Iw we wrote the code calling the inter API, the message is useful. If 
+not, the message would be useful to the team that did write the code. We, on the 
+other hand, might need to update or replace that JAR file entirely with one that 
+fixes the issue. 
+
+
+### Using Module Files with _jmod_ 
+
+We might think a JMOD file as a Java module file. Although Oracle don't recommend 
+this. JMOD files are recommend only when we have native libraries or something that 
+can't go inside a JAR file. This is unlikely to affect us in the real world.
+
+The most important thing to remember is that `jmod` is only for working with the 
+JMOD files. We don't have to memorize the syntax for `jmod`. Table 12.9 lists the 
+common modes.
+
+**Table 12.9: Modes using jmod**
+
+![modes using jmode](jmod_usage_modes.png)
+
+
+### Creating Java Runtimes with _jlink_
+
+One of the benefits of modules is being able to supply just the parts of Java we 
+need. Our `zoo` example from the beginning of the chapter doesn't have many dependencies. 
+If the user already doesn't have Java or is on device without much memory, downloading 
+a JDK that is over 150 MB is a big task. Let's see how big the package actually needs 
+to be. This command create our smaller distribution.
+```
+jlink --module-path mods --add-modules zoo.animal.talks --output zooApp
+```
+
+First we specify where to find the custom modules with `-p` or `--module-path`. Then 
+we specify out module name with `--add-modules`. This will include the dependencies it 
+requires as long as they can be found. Finally, we specify the folder name of our 
+smaller JDK with `--output`.
+
+The output directory contains the `bin`, `conf`, `include`, `legal`, `lib`, and `man` 
+directories along with a release file. These should look familiar as we find them in 
+the full JDK as well.
+
+When we run this command and zip up the `zooApp` directory, the file is only 15 MB. 
+This is an order of magnitude smaller than the full JDK. Where did this space savings 
+come from? There are many modules in the JDK we don't need. Additionally, development 
+tool like `javac` don't need to be in a runtime distribution.
 
 
 
+### Reviewing Command-Line Options
+
+
+**Table 12.10: command line operations comparing**
+
+![command-line operations comparing](command_line_operations_comparing.png)
+
+
+**Table 12.11: javac, main options**
+
+![javac main options](javac_cli_main_options.png)
+
+
+**Table 12.12: java, main options**
+
+![java main options](java_cli_main_options.png)
+
+
+**Table 12.13: jar, main options**
+
+![jar main options](jar_cli_main_options.png)
+
+
+[back to top](#chapter-12-modules)
+
+
+## Comparing Types of Modules
+
+All the modules we're used so far in this chapter are called _named modules_. There 
+are two other types of modules: _automatic modules_, and _unnamed modules_. In this 
+section, we describe these three types of modules. We are expected to be able to 
+compare them.
+
+
+### Named Modules
+
+A _named module_ is on containing a `module-info.java` file. To review, this file 
+appears in the roo of the JAR alongside one or more packages. Unless otherwise specified, 
+a module is a named module. Named modules appear on the module path rather than the class-
+path. Later, we will learn what happens if a JAR containing a `module-info.jar` file is 
+on the classpath. For now, just know it is no considered a named module because it is not 
+on the module path.
+
+As a short definition, a named module has the _name_ inside the `module-info.jar` file 
+and is on the module path.
+
+
+### Automatic Modules
+
+An _automatic module_ appear on the module path but dos not contain a `module-info.java` 
+file. It is simple a regular JAR file that is places on the module path and gets treated 
+as a module.
+
+AS a way of remembering this, Java _automatically_ determines the module name. The code 
+referencing an automatic module treats it as if there is a module-info.java file present. 
+It automatically exports all packages. It also determines the module name.
+
+To determine the module name it search inside the META-INF/MANIFEST.MF of the JAR file, 
+if Java found a property called `Automatic-Module-Name` it uses this value as module name.
+Specifying this single property int the manifest allowed library provider to make things
+easier for applications that wanted to use their library in a modular application. We 
+cant think of it as a promise that when the library becomes a named module, it will use 
+the specified module name.
+
+If the JAR file does not specify an "automatic module name", Java will still allow 
+us to use itn in the module path. In this case, Java will determine the module name by 
+basing itn on the filename of the JAR file. Here are the rules combined with the name 
+coming from the manifest:
+- If the MANIFEST.MF specifies an "Automatic-Module-Name" property, use that.
+- Remove teh file extension from the JAR name.
+- Remove any version information from the end of the name.
+- Replace any remaining character other than letters an numbers with dots.
+- Replace any sequences of dots with a single dot.
+- Remove the dot if it is the first or last character of the result.
+
+Table 12.16 show how to apply these rules to two examples where there is no automatic 
+module name specified in the manifest.
+
+**Table 12.16: practicing with automatic module names**
+
+![modules automatic name](module_automatic_names.png)
+
+
+While the algorithm for creating automatic module names does its best, it can't 
+always come up with a good name. For example, `1.2.0-calendar-1.2.2-good-1.jar` 
+conducive. Luckily, such names are rare and out of scope for the exam.
+
+
+### Unnamed Modules
+
+An _unnamed module_ appears on the classpath. Like an automatic module, it is 
+a regular JAR. Unlike an automatic module, it is on the `classpath` rather than 
+`module path`. This means an unnamed module is treated like old code an a second-
+class citizen to modules.
+
+An unnamed module does not usually contain a `module-info.java` file. If it happens 
+to contain one, that file will be ignored since it is on the `classpath`.
+
+Unnamed modules do not export any packages to named or automatic modules. The unnamed 
+module can read from any JARs on the `classpath` or `module path`. We can think of an 
+unnamed module as code that works the way Java worked before modules. It is a confusing 
+thing that something that isn't really a module to have the word _module_ in its name.
+
+
+### Reviewing Module Types
+
+We can expect to get questions about comparing the three types of modules. A good 
+understanding of the Table 12.17 is a must. A key point to remember is that code on 
+the `classpath` can access the `module path`. By contrast, cond on the `module path` 
+is unable to read form the `classpath`.
+
+**Table 12.17: properties of module types**
+
+![module types properties](module_types_properties.png)
+
+
+[back to top](#chapter-12-modules)
+
+
+## Migrating an Application
+
+Many application were not designed to use the Java Platform Module System because 
+the wre written before it was created or chose not to use it. Ideally, they were at 
+least designed with projects instead of as a big ball of mud. This section gives us 
+an overview of strategies for migrating an existing application to use modules. We 
+cover ordering modules, bottom-up migration, top-down migration, and how to split 
+up an existing project.
+
+
+### Determining the Order
+
+Before we can migrate our application to use modules, we need to know how the 
+packages and libraries in the existing application are structured. Suppose we have 
+a simple application with three JAR files, as show in figure 12.14.
+
+The dependencies between projects from a graph. Both of the representations in the 
+figure are equivalent. The arrows show the dependencies by pointing from the project 
+that will require the the dependency to the one that makes it available. In the 
+language of modules, the arrow will go from requires to exports.
+
+![determining the order](modules_determining_order.png)
+
+**Figure 12.14: Determining the order**
+
+The right side of the diagram makes it easier to identify the top and bottom that 
+top-down and bottom-up migration refer to. Projects that do not have any dependencies 
+are at the bottom. Projects that do have dependencies are at the top.
+
+In this example, there is only one order from top to bottom that honors all the 
+dependencies. Figure 12.15 show that the order is no always unique. Since two of 
+the project do no have an arrow between them, either order is allowed when deciding 
+migration order.
+
+![determining order not unique](modules_order_not_unique.png)
+
+**Figure 12.15: determining order when not unique**
+
+
+### Exploring a Bottom-Up Migration Strategy
+
+The easiest approach to migration is a bottom-up migration. This approach works 
+best wen we have the power to convert any JAR files that aren't already modules. 
+For a bottom-up migration, we follow these steps:
+1. Pick the lowest-level project that has not yes been migrated.
+2. Add a `module-info.java` file to that project. Be sure to add any `exports` to 
+    expose any package used by higher-level JAR files. Also, add a `requires` 
+    directive for any modules this modules depends on.
+3. Move this newly migrated named module from the `classpath` to the `module path`.
+4. Ensure that ny projects that have not yes been migrated stay as `unnamed module`
+    on the `classpath`
+5. Repeat with the next-lowest-level project until are done.
+
+
+We can see this procedure applied to migrate three project in Figure 12.16. We have 
+to notice that each project is converted to a module in turn. 
+
+With a bottom-up migration, we are getting the lower-level project in good shape. 
+this makes it easier to migrate the top-level projects at the en. It also encourages 
+care in what is exposed.
+
+During migration, we have a mix of named modules and unnamed modules. The named 
+modules are the lower-level ones that have been migrated. They are on the module 
+path and not allowed to access any unnamed modules.
+
+![modules bottom up migration](modules_bottom_up_migration.png)
+
+**Figure 12.16: bottom-up migration**
+
+The unnamed modules are on the `classpath` The can access JAR files on both the 
+`classpath` and the `module path`.
+
+
+### Exploring a Top-Down Migration Strategy
+
+A top-down migration strategy is most useful when we don't have control of every 
+JAR file used by our application. For example, suppose another team owns one project. 
+The are just too busy to migrate. We wouldn't want this situation to hold up our 
+entire migration.
+
+To a top-down migration, we follow these steps:
+
+1. Place all projects on the module path.
+2. Pick the highest-level project that has not yet been migrated.
+3. Add a `module-info.java` file to that project to convert the automatic module 
+    into a named module (not forgetting to add any `exports` or `requires` directives).
+    We can use the automatic module name of the other modules when writing the 
+    requires directive since most of the projects on the module path do not have 
+    names yes.
+4. Repeat with the next-highest-level project until we are done.
+
+We can see this procedure applied in order to migrate three projects in Figure 12.17. 
+Notice that each project is converted to a module in turn.
+
+![modules top down migration](modules_top_down_migration.png)
+
+**Figure 12.17: Top-down migration**
+
+With a top-down migration, we are conceding that all of the lower-level dependencies 
+are no ready but that we want to make the application itself a module.
+
+During migration, we have a mix of named modules an automatic modules. The named modules 
+are the higher-level ones that have been migrated. They are on the `module path` and 
+have access to the automatic modules. The automatic modules are all on the `module path`. 
+
+Table 12.18 reviews what we need to know about the two main migration strategies. Is a 
+must to know both very well.
+
+**Table 12.18: Comparing migration strategies**
+
+![comparing migration strategies](modules_migration_strategies.png)
+
+
+### Splitting a Big Project into Modules
+
+Suppose we start with an application that has a number of packages. The first 
+step is to break them into logical grouping and draw the dependencies between them. 
+Figure 12.18 shows an imaginary systems's decomposition. Notice that there are seven 
+packages on both, the left and right sides. There are fewer modules because some 
+packages share a module.
+
+![first attempt decomposition](modules_decomposition_attempt.png)
+
+**Figure 12.18: Fist attempt decomposition**
+
+There's a problem with this decomposition. Do you see it? The Java Platform 
+Module System does now allow for _cyclic dependencies_. A cyclic dependency, or 
+_circular dependency_, is when two things directly or indirectly depend on each 
+other. If the `zoo.tickets.delivery` module requires the `zoo.tickets.discount` 
+module, `zoo.tickets.discount` is not allowed to require the `zoo.ticket.delivery` 
+module.
+
+Now that we know that the decomposition in Figure 12.18 won't work, what can we 
+do about it? A common technique is to introduce another module. That module will 
+contains the code that the other two modules share. Figure 12.19 shows the new 
+modules without any cyclic dependencies. Notice the new module `zoo.tickets.etech`. 
+We created new packages to put in that module. This allows the developers to put 
+the common code in there and break the dependency. Mo more cyclic dependencies!
+
+![second attempt decomposition](modules_decomposition_attempt_2.png)
+
+**Figure 12.19: removing cyclic dependencies**
+
+
+### Failing to Compile with a Cyclic Dependency
+
+It is extremely important to understand that Java will not allow us to compile 
+modules that have circular dependencies. In this section, we look at an example 
+leading to ghat compile error.
+
+Consider the `zoo.butterfly` module described here:
+```
+// Butterfly.java
+package zoo.butterfly;
+
+public class Butterfly {
+  private Caterpillar caterpillar;
+}
+
+// module-info.java
+module zoo.butterfly {
+  exports zoo.butterfly;
+  requires zoo.caterpillar;
+}
+```
+
+We can't compile this yet as we need to build `zoo.caterpillar` first. After all, 
+our butterfly requires it. Now we look at `zoo.caterpillar`:
+```
+// Caterpillar.java
+package zoo.caterpillar;
+
+public class Caterpillar {
+  Butterfly emergeCocoon() {
+    // logic omitted
+  }
+}
+
+// module-info.java
+module zoo.caterpillar {
+  exports zoo.caterpillar;
+  requires zoo.butterfly;
+}
+```
+
+We can't compile this yet as we need to build `zoo.butterfly` fist. Now we have 
+a stalemate. Neither module can be compiled. This is our circular dependency problem 
+at work. This is on of the advantage of the module system. It prevents us from writing 
+code that has a cyclic dependency. Such code won't even compile! 
+
+We might be wondering what happens if three modules are involved. Suppose module 
+`ballA` requires module `ballB` and `ballB` requires module `ballC`. Can module `ballC` 
+require module `ballA`?. No. This would create a cyclic dependency. Draw it and see. 
+We can follow our pencil around the circle from `ballA` to `ballB` to `ballC`to 
+`ballA`to ..., you get the idea. There are just too many balls in the air!
+
+Java will still allow us to have a cyclic dependency between packages with a module. 
+It enforces that do not have cyclic dependency between modules.
+
+[back to to](#chapter-12-modules)
+
+
+## Summary
+
+The Java Platform Module System organizes code at a higher level than packages. 
+Each module contains one or more packages and a `module-info.java file.` The `java.base` 
+module is most common and is automatically supplied to all modules as dependency.
+
+The process of compiling and running modules uses the `--module-path`, also known as 
+`-p`. Running a modules uses the `--module` options, also known as `-m`. The class 
+to run is specified in the format `moduleName/className`.
+
+The module declaration file supports a number of directives. The `exports` 
+directive specifies that a package should be accessible outside the module. I can 
+optionally restrict that with an `export to` directive to export to a specific package. 
+The `requires` directive is used when a module depends on code in another module. 
+Additionally, `requires transitive` can be used when all modules that require on module 
+should always require another. The `provides` and `uses` directives are use when 
+sharing and consuming a service. Finally, the `opens` directive is used to allow 
+access via reflection.
+
+Both the `java` and `jar` commands can be used to describe the contents of a module. 
+The `java` command can additionally list available modules and show module resolution.
+The `jdeps` command prints information about packages used in addition to module-level 
+information. The `jmod` command is used when dealing with files that don't meet the 
+requirements for a JAR. The `jlink` command creates a smaller Java runtime image.
+
+There are three types of modules. _Named_  modules contain a `module-info.java` file 
+and are on the `module path`. The can read only from the `module path`. _Automatic_  
+modules are also on the `module path` but have not yet been modularized. They might 
+have an automatic module name set in the `manifest`. _Unnamed_  modules are on the 
+`classpath`.
+
+The two most common migration strategies are top-down and bottom-up migration. Top-
+down migration starts migrating the module with the most dependencies and places all 
+other modules on the `module path`. Bottom-up migration starts migrating a module with 
+no dependencies and moves on module to the `module path at a time. Both of these 
+strategies requires ensuring that we do no have any cyclic dependencies since the Java 
+Platform Module System will not allow cyclic dependencies to compile.
+
+
+[back to to](#chapter-12-modules)
