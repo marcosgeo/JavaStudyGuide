@@ -35,6 +35,10 @@ difficult problems to diagnose and resolve.
 
 [Using Concurrent Collections](#using-concurrent-collections)
 
+[Identifying Threading Problems](#identifying-threading-problems)
+
+[Working with Parallel Streams](#working-with-parallel-streams)
+
 
 ## Introducing Threads
 
@@ -1444,3 +1448,791 @@ completed in parallel by all four zoo workers.
 
 
 ## Using Concurrent Collections
+
+Besides managing threads, the Concurrency API includes interfaces and classes 
+that help us coordinate access to collection shared by multiple tasks. By collections, 
+we are referring to the Java Collections Framework that we studied in Chapter 9. In 
+this section we will see many of the concurrent classes available to us when using 
+the Concurrent API.
+
+
+### Understanding Memory Consistency Errors
+
+The purpose of the concurrent collection classes is to solve common memory 
+consistency errors. A _memory consistency error_ occurs when two threads have 
+inconsistent views of what should be the same data. Conceptually, we want writes 
+on one thread to be available to another thread if it accesses the concurrent 
+collection after the write has occurred.
+
+When two threads try to modify the same nonconcurrent collection, the JVM may 
+throw a `ConcurrentModificationException` at runtime. In fact, it can happen 
+with a single thread. Take a look at the following code snippet:
+```
+11: var foodData = new HashMap<String, Integer>();
+12: foodData.put("penguin", 1);
+13: foodData.put("flamingo", 2);
+14: for (String key : foodData.keySet() )
+15:   foodData.remove(key);
+```
+
+This snippet will throw a `ConcurrentModificationException` during the second 
+iteration of the loop, since the iterator on `keySet()` is not properly updated after 
+the first element is removed. Changing the first line to use a `ConcurrentHashMap` 
+will prevent the code from throwing an exception at runtime.
+```
+11: var foodData = new ConcurrentHashMap<String, Integer>();
+```
+
+Although we don't usually modify a loop variable, this example highlights the fact 
+that the `ConcurrentHashMap` is ordering read/write access such that all access to 
+the class is consistent. In this code snippet, the iterator created by `keySet()` 
+is updated as soon as an object is removed from the `Map`
+
+The concurrent classes wre created to help avoid common issues in which multiple 
+threads are adding and removing objects from the same collections. At any given 
+instance, all threads should have the same consistent view of the structure of 
+the collection.
+
+
+### Working with Concurrent Classes
+
+We should use a concurrent collection class any time we have multiple threads 
+modifying a collection outside a synchronized block or method, even if we don't 
+expect a concurrency problem. Without the concurrent collections, multiple threads 
+accessing a collection could result in an exception being thrown or, worse, 
+corrupted data.
+
+---
+
+If the collection is immutable (and contains immutable objects), the concurrent 
+collection are not necessary. Immutable objects can be accessed by any number of 
+threads and do not require synchronization. By definition, they do not change, 
+so there is no chance of a memory consistency error.
+
+---
+
+When passing around a concurrent collection, a caller may need to know the 
+particular implementation class. That said, it is considered a good practice 
+to pass around a non-concurrent interface reference when possible, similar to
+hwo we instantiate a `Hashmap` but often pass around a `Map` reference:
+```
+Map<String, Integer> map = new ConcurrentHashMap<>();
+```
+
+Table 13.9 list the common concurrent classes with which we should be familiar.
+
+**Table 13.9: Concurrent collection classes**
+
+![concurrent collection classes](concurrent_collection_classes.png)
+
+
+Most of the classes in Table 13.9 are just concurrent versions of their non-
+concurrent counterpart classes, such as `ConcurrentHashMap` vs. `Map`, or 
+`ConcurrentLinkedQueue` vs `Queue`. We don't need to know any class-specific 
+concurrent methods. We just need to known the inherited methods, such as 
+`get()` and `set()` for `List` instances.
+
+The `Skip`  classes might sound strange, but they are just "sorted" versions of 
+the associated concurrent collections. When we see a class with `Skip` in the name, 
+we have to just think "sorted concurrent" collections, and the rest should follow 
+naturally.
+
+The `CopyOnWrite` classes behave a little differently than the other concurrent 
+examples we have seen. These classes create a copy of the collection any time a 
+reference is added, remove, or changed in the collection and then update the original 
+collection reference to point to the copy. These classes are commonly used to 
+ensure an iterator doesn't see modifications to the collection.
+
+Let's take a look at how this works with an example:
+```
+List<Integer> favNumbers = new CopyOnWriteArrayList<>(List.of(4, 3, 42));
+for (var n : favNumber) {
+  System.out.println(n + " ");     // 4 3 42
+  favNumbers.add(n+1);
+}
+System.out.println();
+System.out.println("Size: " + favNumbers.size());     // Size: 6
+```
+
+Despite adding elements, the iterator is not modified, and the loop executes 
+exactly three times. Alternatively, if we had used a regular `ArrayList`object, 
+a `ConcurrentModificationException` would have been thrown at runtime. The `CopyOnWrite` 
+classes can use a lot of memory, since a new collection structure is created any time 
+the collection is modified. Therefore, they are commonly used in multithreaded 
+environment situations where readds are far more common than writes.
+
+A `CopyOnWrite` instance is similar to an immutable object, as a new underlying 
+structure is created every time the collection is modified. Unlike a true immutable 
+object, though, the reference to the object stays the same even while the underlying 
+data is changed.
+
+Finally, Table 13.9 includes `LinkedBlockingQueue`, which implements the concurrent 
+`BlockingQueue` interface. This class is just like a regular `Queue`, except that 
+it includes overloaded version of `offer(0` and `poll()` that take a timeout. These 
+methods wait (or block) up to a specific amount of time to complete an operation
+
+
+### Obtaining Synchronized Collections
+
+Besides the concurrent collection classes that we have covered, the Concurrency API 
+also includes methods for obtaining synchronized version of existing non-concurrent 
+collection objects. These synchronized methods are defined in the `Collections` class. 
+They operate on the inputted collection and return a reference that is the same type 
+as the underlying collection. These methods as listed on Table 13.10.
+
+**Table 13.10: Synchronized Collections methods**
+
+![synchronized collections methods](synchronized_collections_methods.png)
+
+
+If we are writing code to create a collection an it requires synchronization, 
+we should use the class defined in Table 19.9. On the other hand, if we are passed 
+a non-concurrent collection and need synchronization, we use the methods in 13.10.
+
+[back to top](#chapter-13-concurrency)
+
+
+## Identifying Threading Problems
+
+Now that we know how to write thread-safe code, let's talk about what qualifies 
+as a threading problem. A threading problem can occur in multithreaded applications 
+when two or more threads interact in an unexpected an undesirable way. For example, 
+two threads may block each other from accessing a particular segment of code.
+
+The Concurrency API was created to help eliminate potential threading issues 
+common to all developers. As we have seen, the Concurrency API created threads and 
+manages complex thread interactions for us, often in just a few lines of code.
+
+Although the Concurrency API reduces the potential for threading issues, it does 
+not eliminate them. In practice, finding an identifying threading issues within an 
+application is often on of the most difficult tasks a developer can undertake.
+
+
+### Understanding Liveness
+
+As we have seen in this chapter, many thread operations can be performed 
+independently, but some require coordination. For example, synchronizing on a method 
+requires all threads that call the method to wait for other threads to finish before 
+continuing. We also saw earlier in the chapter that threads in a `CyclicBarrier` will 
+each wait for the barrier limit to be reached before continuing.
+
+
+What happened to th application while all of these threads are waiting? In many cases, 
+the waiting is ephemeral, and the user has very little idea that any delay has occurred. 
+In other cases, though, the waiting may be extremely long, perhaps infinite.
+
+_Liveness_ is the ability of an application to be able to execute in a timely manner. 
+Liveness problems, then, are those in which the application becomes unresponsive or is 
+in some kind of "stuck" state. More precisely, liveness problems are often the result 
+of a thread entering a `BLOCKING` or `WAITING` state forever, or repeatedly entering or 
+exiting these states. There are three types of liveness issues with which we should be 
+familiar: deadlock, starvation, and livelock.
+
+#### Deadlock
+
+_Deadlock_ occurs when two or more threads are blocked forever, each waiting on 
+the other. We can illustrate this principle with the following example. Imagine that 
+our zoo has two foxes: Foxy and Tails. Foxy likes to eat first and then drink wanter, 
+while Tails kikes to drink water first and then eat. Furthermore, neither animal 
+likes to share, and they will finish their meal only if the have exclusive 
+access to both food an water.
+
+The zookeeper places the food on one side of the environment and the water on the 
+other side. Although our foxes are fast, it still takes them 100 milliseconds to run 
+from one side of the environment to the other.
+
+What happens if Foxy gets the food first and Tails gets the water first? The 
+following application models this behavior:
+```
+import java.util.concurrent.*;
+
+class Food {}
+class Water {}
+public record Fox(String name) {
+  public void eatAndDrink(Food food, Water water) {
+    synchronized(food) {
+      System.out.println( name() + " Got Food");
+      move();
+      synchronized(water) {
+        System.out.println( name() + " Got Water");
+      }
+    }
+  }
+  public void drinkAndEat(Food food, Water water) {
+    synchronized(water) {
+      System.out.println( name() + " Got Water");
+      move();
+      synchronized(food) {
+        System.out.println( name() + " Got Food");
+      }
+    }
+  }
+  public void move() {
+    try {
+      Thead.sleep(100);
+    } catch (InterruptedException e) {}
+  }
+  public static void main(String[] args) {
+    // create participants and resources
+    var foxy = new Fox("Foxy");
+    var tails = new Fox("Tails");
+    var food = new Food();
+    var water = new Water();
+    var service = Executors.newScheduledThreadPool(10);
+    try {
+      service.submit( () -> foxy.andAndDrink(food, water));
+      service.submit( () -> tails.drinkAndEat(food, water)); 
+    } finally {
+      service.shutdown();
+    }
+  }
+}
+```
+
+In this example, Foxy obtains the food and then moves to the other side of the 
+environment to obtain the water. Unfortunately, Tails already drank the water and 
+is waiting for the food to become available. The result is that our program 
+outputs the following, and it hangs indefinitely:
+```
+Foxy God Food
+Tails Got Water
+```
+
+This example is considered a deadlock because both participants are permanently 
+blocked, waiting on resource that will never become available.
+
+
+#### Starvation
+
+_Starvation_ occurs when a single thread is perpetually denied access to a shared 
+resource or lock. The thread is still active, but it is unable to complete its work 
+as a result of other threads constantly taking the resource that it is trying to 
+access. 
+
+In our fox example, imagine that we have a pack o very hungry, very competitive 
+foxes in out environment. Every time Foxy stands up to go get food, one of the other 
+foxes sees her and rushes to eat before her. Foxy is free to roam around the enclosure, 
+take a nap, and howl for a zookeeper but is never able to obtain access to the food. 
+In this example, Foxy literally and figuratively experiences starvation. It's a 
+good thing that this is just an example.
+
+
+#### Livelock
+
+_Livelock_ occurs when two or more threads are conceptually blocked forever, 
+although they are each still active and trying to complete their task. Livelock 
+is a special case of resource starvation in which two or more threads actively try 
+to acquire a set of locks, are unable to do so, and restart part of the process.
+
+Livelock is often a result of two threads trying to resolve a deadlock. Returning 
+to our fox example, imagine that Foxy and Tails are both holding their food and water 
+resources, respectively. They each realize that they cannot finish their meal in this 
+state, so they both let go of their food and water, run to the opposite side of the 
+environment, and pick up the other resource. Now Foxy has the water, Tails has the 
+food, and neither is able to finish their meal!
+
+If Foxy and Tails continue this process forever, it is referred to as _livelock_. 
+Both Foxy and Tails are active, running back and forth across their area, but neither 
+can finish their meal. Foxy and Tails are executing a form of failed deadlock recovery. 
+Each fox notices that they are potentially entering a deadlock state and responds by 
+releasing all of its locked resources. Unfortunately, the lock and unlock precess is 
+cyclical, and the two foxes are conceptually deadlocked.
+
+In practice, livelock is often a difficult issue to detect. Threads in a livelock 
+state appear active and able to response to requests, even when the are stuck 
+in an endless cycle.
+
+
+### Managing Race Conditions
+
+A _race condition_ is an undesirable result that occurs when two tasks that 
+should be completed sequentially, are completed at the same time. We encountered 
+examples of race conditions earlier in the chapter when we introduced synchronization.
+
+While Figure 13.4 shows a classical thread-based example of a race condition, we now 
+provide a more illustrative example. Imagine that two zoo patrons, Olivia  and Sophia, 
+are signing up for an account on the zoo's new visitor website. Both of them want to 
+use the same username, ZooFan, and each sends a request to create the account at 
+the same time, as shown in Figure 13.6.
+
+![race condition user creation](race_condition_user_creation.png)
+
+**Figure 13.6: Race condition on user creation**
+
+
+What result does the web server return when both users attempt to create an 
+account with the same username in Figure 13.6?
+
+**Possible Outcomes for this Race Condition**
+- Both users are able to create accounts with the username ZooFan.
+- Neither user is able to create an account with the username ZooFan, and an error 
+    message is returned to both users.
+- One user is able to create an account with the username ZooFan, while the other 
+    user receives an error message.
+
+The first outcome is _really bat_, as it leads to users trying to log in with the 
+same username. Whose data do they see when they log in? The second outcome causes 
+both user to have to try again, which is frustrating but a least doesn't lead to 
+corrupt or bad data.
+
+The third outcome is often considered the best solution. Like the second situation, 
+we preserve data integrity; but unlike the second situation, at least one user is able 
+to move forward on the first request, avoiding additional race condition scenarios.
+
+[back to top](#chapter-13-concurrency)
+
+
+## Working with Parallel Streams
+
+We conclude this chapter by combining what we learned in Chapter 10, Streams, with 
+the concepts we learned about in this chapter. One of the most powerful features of 
+the Stream API is built-in concurrency support.. Up until now, all of the streams we 
+have worked with have been serial streams. A _serial stream_ is a stream in which 
+the results are ordered, with only on entry being processed at a time.
+
+A _parallel stream_ is capable of processing results concurrently, using multiple 
+threads. For example, we can use a parallel stream and the `map()` operation to 
+operate concurrently on the elements in the stream, vastly improving performance 
+over processing a single element at a time.
+
+Using a parallel stream can change not only the performance of our application but 
+also the expected results. As we shall see, some operation also require special handling 
+to be able to be processed in a parallel manner. The number of threads available in 
+a parallel stream is proportional to the number of available CPUs in our computer.
+
+
+### Creating Parallel Streams
+
+The Stream API as designed to make creating parallel streams quite easy. We should 
+be familiar with two way of creating a parallel stream.
+```
+Collection<Integer> collection = List.of(1, 2);
+
+Stream<Integer> p1 = collection.stream().parallel();
+Stream<Integer> p2 = collection.parallelStream();
+```
+
+The first way to create a parallel stream is from an existing stream. Isn't this 
+cool? Any stream can be made parallel! The second way to create a parallel stream is 
+from a Java Collection class. We use both of these methods throughout this section.
+
+---
+
+The Stream interface includes a method `isParallel()` that can be used to test 
+whether the instance of a stream supports parallel processing. Some operations 
+on stream preserve the parallel attribute, while other do not.
+---
+
+### Performing a Parallel Decomposition
+
+A _parallel decomposition_ is the process of taking a task, breaking it into 
+smaller pieces that can be performed concurrently, and then reassembling the result. 
+The more concurrent a decomposition, the greater performance improvement of using 
+parallel streams.
+
+Let's try it out. First, let's define a reusable function that "does the work" just 
+by waiting for five seconds.
+```
+private static int doWork(int input) {
+  try {
+    Tread.sleep(5000);
+  } catch (InterruptedException e) {}
+  return input;
+}
+```
+
+We can pretend that in a real application, this work might involve calling a 
+database or reading a file. Now let's use this method with a serial stream.
+```
+10: long start = System.currentTimeMillis();
+11: List.of(1, 2, 3, 5, 5)
+12:   .stream()
+13:   .map( w -> doWork(w) )
+14:   .forEach( s -> System.out.print(s + " ") );
+15:
+16: System.out.println();
+17: var timeTaken = (System.currentTimeMillis() - start) / 1000;
+18: System.out.println("Time: " + timeTaken + " seconds");
+```
+
+What is the output when executed as part of a `main()` method? Let's take a look:
+```
+1 2 3 4 5
+Time: 25 seconds
+```
+
+As we expect, the results are ordered and predictable because we are using a serial 
+stream. It also took around 25 seconds to process all five results, one at a time. 
+What happens if we replace line 12 with on that use a `parallelStream()`? the 
+following is some sample output:
+```
+3 2 1 5 4
+Time: 5 seconds
+```
+
+As we can see, the results are no longer ordered or predictable. The `map()` and 
+`forEach()` operations on a parallel stream are equivalent to submitting multiple 
+`Runnable` lambda expression to a pooled thread executor and then waiting for 
+the results.
+
+What about the time required? In this case, out system had enough CPUs for all 
+of the tasks to be run concurrently. If we ran this same code on a computed with 
+fewer processors, it might output 10 seconds, 15 seconds, or some other value. The 
+key is that we've written out code to take advantage of parallel processing when 
+available, so our job is done.
+
+---
+
+**Ordering Result**
+
+If our stream operation needs to guarantee ordering and we're not sure if it is 
+serial or parallel, we can replace line 14 with one that uses `forEachOrdered()`:
+```
+14:   .forEachOrdered( s -> System.out.print(s + " ") );
+```
+
+This outputs the results in the order in which they are defined in the stream:
+```
+1 2 3 4 5
+Time: 5 seconds
+```
+
+While we've lost some of the performance gains of using a parallel stream, our 
+`map()` operation can still take advantage of the parallel stream.
+
+---
+
+
+### Processing Parallel Reductions
+
+Besides potentially improving performance and modifying the order of operations, 
+using parallel streams can impact how we write our application. A _parallel reduction_ 
+is a reduction operation applied to a parallel stream. The results for parallel 
+reductions can differ from what we expect when working with serial streams.
+
+#### Performing Order-Based Tasks
+
+Since order is not guaranteed with parallel streams, methods such as `findAny()` 
+on parallel streams may result in unexpected behavior. Consider the following example:
+```
+System.out.print(
+  List.of(1, 2, 3, 4, 5, 6)
+    .parallelStream()
+    .findAny()
+    .get()
+);
+```
+
+The JVM allocates a number of threads and returns the value of the first one to 
+return a result, which could be 4, 2, and so on. While _neither_ the serial nor the 
+parallel stream is guaranteed to return the first value, the serial stream often 
+does. With a parallel stream, the results are likely to be more random.
+
+What about operation that consider order, such as `findFirst()`, `limit()`, and 
+`skip()`? Order is still preserved, but performance may _suffer_ on a parallel 
+stream as a result of parallel processing task being forced to coordinate all of 
+its threads in a synchronized-like fashion.
+
+On the plu side, the results of ordered operations on a parallel stream will be 
+consistent with a serial stream. For example, calling `skip(5).limit(2).findFirst()` 
+will return the same result on ordered serial and parallel streams.
+
+---
+**Creating Unordered Streams**
+
+All of the streams we have been working with are considered ordered by default. 
+It is possible to create an unordered stream from an ordered stream, similar to 
+how we create a parallel stream from a serial stream.
+```
+  List.of(1, 2, 3, 4, 5, 6).stream().unordered();
+```
+
+This method does not reorder the elements; it just tells the JVM that if an order-
+based stream operation is applied, the order can be ignored. For example, calling 
+`skip(5)` on an unordered stream will skip any 5 elements, not necessarily the 
+first 5 required on an ordered stream.
+
+For serial stream, using an unordered version has no effect. But on parallel 
+streams, the results can greatly improve performance.
+```
+  List.of(1, 2, 3, 4, 5, 6).stream().unordered().parallel();
+```
+
+Even though unordered streams will not be on the exam, if we are developing 
+application with parallel stream,s, we should know when to apply an unordered 
+stream to improve performance.
+
+---
+
+
+#### Combining Result with _reduce()_
+
+As we learned in Chapter 10, the stream operation `reduce()` combines a stream 
+into a single object. Remembering that the first parameters to the `reduce()` method 
+is called the _identity_, the second is called the _accumulator_, and the third is 
+called the _combiner_. The following is the signature for the method:
+```
+<U> U reduce(
+  U identity,
+  BiFunction<U, ? super T, U> accumulator,
+  BinaryOperator<U> combiner
+)
+```
+
+We can concatenate a list of `char` values using the `reduce()` method, as shown in 
+the following example:
+```
+System.out.println(
+  List.of('w', 'o', 'l', 'f')
+    .parallelStream()
+    .reduce("", (s1, c) -> s1 + c, (s2, s3) -> s2 + s3)
+);
+wolf
+```
+
+The naming of the variables in this stream example is not accidental. We used `c` 
+for `char`, whereas `s1`, `s2`, and `s3` are `String` values.
+
+On parallel streams, the `reduce()` method works by applying the reduction to pairs 
+of elements within the stream to create intermediate values and then combining those 
+intermediate values to produce a final result. Put another way, in a serial stream, 
+"wolf" is built one character at a time. In a parallel stream, the intermediate 
+values "wo" and "lf" are created and then combined.
+
+With parallel streams, we now have to be concerned about order. What if the elements 
+of a string are combined in the wrong order to produce "wlfo" or "flwo"? The Stream 
+API prevents this problem while still allowing streams to be processed in parallel, 
+as long as we follow one simple rule: make sure that the accumulator and combiner 
+produce the same result regardless of the order the are called in.
+
+While the requirements for the input arguments to the `reduce()` methods hold `true` 
+for both serial and parallel streams, and we may not have noticed any problems in serial 
+streams because the result was always ordered. With parallel streams, though, order is 
+no longer guaranteed, and any argument that violates these rules is mut more likely 
+to produce side effects or unpredictable results.
+
+Let's take a look at an example using a problematic accumulator. In particular, 
+order matter when subtracting numbers; therefore, the following code can output 
+different values depending on whether we use a serial or parallel stream. We can 
+omit a _combiner_ parameter in these examples as the _accumulator_ can be used 
+when the intermediate data type are the same.
+```
+System.out.println(
+  List.of(1, 2, 3, 4, 5, 6)
+    .parallelStream()
+    .reduce(0, (a, b) -> (a - b))    // problematic accumulator
+);
+```
+
+It may output -21, 3, or some other value.
+
+
+We can see other problems if we use an _identity_ parameter that is not truly an 
+identity value. For example , what we expect the following code to output?
+```
+System.out.println(
+  List.of("w", "o", "l", "f")
+    .parallelStream()
+    .reduce("_", String::concat)
+);
+_w_o_l_f
+```
+
+On a serial stream, it prints "_wolf", but on a parallel stream, the result is 
+"_w_o_l_f". As part of the parallel process, the identity is applied to multiple 
+elements in the stream, resulting in very unexpected data.
+
+---
+**Selecting a _reduce()_ Method**
+
+Although the one- and two-argument versions oss `reduce()` support parallel 
+processing, it is recommended that we use the three-argument version of `reduce()` 
+when working with parallel streams. Providing an explicit _combiner_ method allows 
+the JVM to partition the operations in the stream more efficiently.
+
+---
+
+
+#### Combining Results with _collect()_
+
+Like `reduce()`, the Stream API includes a three-argument version of `collect()` 
+that takes _accumulator_ and _combiner_ operators along with a _supplier_ operator 
+instead of an identity.
+```
+<R> R collect(
+  Supplier<R> supplier,
+  BiConsumer<R, ? super T> accumulator,
+  BiConsumer<R, R> combiner
+)
+```
+
+Also, like `reduce()`, the _accumulator_ and _combiner_ operations must be able to 
+process result in any order. In this manner, the three-argument version of `collect()` 
+can be performed as a parallel reduction, as shown in the following example:
+```
+Stream<String> stream Stream.of("w", "o", "l", "f").parallel();
+
+SortedSet<String> set stream.collect(
+  ConcurrentSkipListSet::new,
+  Set::add,
+  Set::addAll
+);
+
+System.out.println(set);    //[f,l,o,w]
+```
+
+Remembering that elements in a `ConcurrentSkipListSet` are sorted according 
+to their natural ordering. We should use a concurrent collection to combine 
+the results, ensuring that the results of concurrent threads do not cause a 
+`ConcurrentModificationException`.
+
+Performing parallel reduction with a collector requires additional considerations. 
+For example, it the collection int which we are inserting is an ordered data set, 
+such as a `List`, the elements in the resulting collection must be in the same order, 
+regardless of whether we use a serial or parallel stream. This may reduce performance, 
+though, as some operations cannot be completed in parallel.
+
+
+#### Performing a Parallel Reduction on a Collector
+
+While we covered the `Collector` interface in Chapter 10, we didn't go into detail 
+about its properties. Every `Collector` instance defines a `characteristics()` method 
+that returns a set of `Collector.Characteristics` attributes. When using a `Collector` 
+to perform parallel reduction, a number of properties must hold `true`. Otherwise, 
+the `collect()` operation will execute in a single-threaded fashion
+
+**Requirements for Parallel Reduction with _collect()_**
+- The stream is parallel.
+- The parameters of the `collect()` operation has the `Characteristics.CONCURRENT 
+    characteristic.
+- Either the stream is unordered or the collector has the characteristic 
+    `Characteristic.UNORDERED.
+
+for example, while `Collectors.toSet()`  dos have he `UNORDERED` characteristic, it 
+dos not have the `CONCURRENT` characteristic. Therefore, the following is not a 
+parallel reduction even with a parallel stream:
+```
+parallelStream.collect(Collectors.toSet());     // not a parallel reduction
+```
+
+The `Collectors` class includes two sets of static methods for retrieving collectors, 
+`toConcurrentMap()`, and `groupingByConcurrent()`, both of which are `UNORDERED` and 
+`CONCURRENT`. These methods produce `Collector` instances capable of performing 
+parallel reduction efficiently. Like their nonconcurrent counterparts, there are over-
+loaded version that take additional arguments.
+
+Here is a rewrite of an example from Chapter 10 to use a parallel stream and 
+parallel reduction:
+```
+Stream<String> oMy = Stream.of("lions", "tigers", "bears").parallel();
+ConcurrentMap<Integer, String> map = ohMy.Collect(
+  Collectors.toConcurrentMap(
+    String::length,
+    k -> k,
+    (s1, s2) -> s1 + "," + s2
+  )
+);
+System.out.println(map);               // {5=lions,bears, 6=tigers}
+System.out.println(map.getClass());    // java.util.concurrent.ConcurrentHashMap
+```
+
+We use a `ConcurrentMap` reference, although the actual class returned is likely 
+`ConcurrentHashMap`. The particular class is not guaranteed; it will just be a class 
+that implements the interface `ConcurrentMap`.
+
+Finally, we can rewrite out `groupingBy()` example from Chapter 10 to use a parallel 
+stream and parallel reduction.
+```
+var ohMy = Stream.of("lions", "tigers", "bears").parallel()
+ConcurrentMap<Integer, List<String>> map = ohMy.Collect(
+  Collectors.groupingByConcurrent(String::length)
+);
+System.out.println(map);     // {5=[lions,bears], 6=[tigers]}
+```
+
+As before, the returned object can be assigned to a `ConcurrentMap` reference.
+
+---
+**Avoiding Stateful Streams**
+
+Side effects can appear in parallel streams if our lambda expression are stateful. 
+A _stateful lambda expression_ in one whose result depends on any state that might 
+change during the execution of a pipeline. For example, the following method that 
+filters out even number is stateful;
+```
+public List<Integer> addValues(IntStream source) {
+  var data = Collections.synchronizedList(new ArrayList<Integer>());
+  source.filter(s -> s % 2 == 0)
+    .forEach(i -> { data.add(i); });      // stateful, don't do this
+  return data;
+}
+```
+
+Let's say this method is executed with a serial stream:
+```
+var list = addValues(IntStream.range(1, 11));
+System.out.print(list);                       // [2, 4, 6, 8, 10]
+```
+
+Great, the results are in the same order that they were entered. But what if 
+someone else passes in a parallel stream?
+```
+var list = addValues(IntStream.range(1, 11).parallel());
+System.out.print(list);                     // [6, 8, 10, 2, 4]
+```
+
+Our results no longer match our input order. The problem is that our lambda 
+expression is stateful and modifies a list that is outside our stream. We can 
+fix this solution by rewriting out stream operation to be stateless:
+```
+public List<Integer> addValuesBetter(IntStream source) {
+  return source.filter(s -> s % 2 == 0)
+    .boxed()
+    .collect(Collectors.toList()
+  );
+}
+```
+
+This method process the stream and then collects all the results into a new list. 
+It produces the same ordered result on both serial and parallel streams. It is strongly 
+recommended that we avoid stateful operations when using parallel stream, to remove any 
+potential data side effects. In fact, they should be avoided in serial streams since 
+doing so limits the code's ability to someday take advantage of parallelization.
+
+---
+
+[back to top](#chapter-13-concurrency)
+
+
+## Summary
+
+In this chapter we were introduced to threads and outlined some of the key concurrency 
+concepts we need to know to be a better software developer. We should known how to create 
+and define the threads's work using a `Runnable` instance, ans well as how to pause and 
+interrupt the thread. When working with the Concurrency API, we should also know how to 
+create threads using `Callable` lambda expressions.
+
+At this point, we should know how to concurrently execute tasks using `ExecutorService` 
+like a pro. We should also know which `ExecutorService` instances are available, including 
+scheduled and pooled services.
+
+Thread-safety is about protecting data from being corrupted by multiple threads modifying 
+it at the same time. Java offer many tools to keep data safe, including atomic classes, 
+synchronized methods/blocks, the Lock Framework, and `CyclicBarrier`. The Concurrency API 
+also includes numerous collection classes that handle multithreaded access for us. We need 
+to be familiar with the concurrent collections, including the `CopyOnWrite` classes, which 
+create a new underlying structure any time the underlying collection is modified.
+
+When processing tasks concurrently, a variety of potential threading issues can arise. 
+Deadlock, starvation, and livelock can result in programs that appear stuck, while race 
+conditions can result in unpredictable data. For the exam, we need to know only the basic 
+theory behind theses concepts. In professional software development, however, finding 
+and resolving such problems is a valuable skill.
+
+Finally, we discussed parallel streams and showed how to use them to perform parallel 
+decompositions and reductions. Parallel streams can greatly improve the performance of 
+our application. They can also cause unexpected results since the processing is no longer 
+ordered. We need to remember to avoid stateful lambda expressions, specially when 
+working with parallel streams.
+
+[back to top](#chapter-13-concurrency)
