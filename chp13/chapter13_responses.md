@@ -111,3 +111,139 @@ for all tasks to complete and the service to finish shutting down. Since each fi
 task is still executing, the `awaitTermination()` method will return with a value of 
 `false` after two seconds but no throw an exception. For these reasons, option B is 
 correct.
+
+
+13) 
+C
+The code does not compile, so options A and E are incorrect. The problem here is that 
+`c1` is a `String`, so the code fails to combine on line `q2`, since calling `length()` 
+on an `Integer`is not allowed, and option C is correct. The rest of the lines compile 
+without issue. Note that calling `parallel()`on an already parallel stream is allowed, 
+and it may return the same object.
+
+
+14) 
+C, E
+The code compiles without issue, so option D is incorrect. Since both tasks are 
+submitted to the same thread executor pool, the order cannot be determined, so options 
+A and B are incorrect, and option C is correct. The key here is that the order in which 
+the resources `o1` and `o2` are synchronized could result in a deadlock. For example, 
+if the first thread gets a lock on `o1` and the second thread gets a lock on `o2` before 
+either thread can get their second lock, the code will hang at runtime, making option E 
+correct. The code cannot produce a livelock, since both threads are waiting, so option 
+F is incorrect. Finally, if a deadlock does occur, an exception will bot be thrown, 
+so option G is incorrect.
+
+
+15) 
+A
+The code compiles and runs without issue, so options C, D, E, and F are incorrect. 
+The `collect()` operation groups the animals int those that do and do not start with 
+the letter "p". Note that there are four animals that do not start with the letter "p" 
+and three animals that do. The logical complement operator (!) before the `startsWith()` 
+method means that results are reversed, so the output is "3 4", and option A is correct, 
+making option B incorrect.
+
+
+16) 
+A, B
+The code compiles just fine. If the call to `fuel++` are ordered sequentially, then 
+the program will print "100" at runtime, making option B correct. On the other hand, 
+the call may overwrite each other. The `volatile` attribute only guarantees memory 
+consistency, not thread-safety, making option A correct and option C incorrect. Option 
+E is also incorrect, as no `InterruptedException` is thrown by this code. To remember, 
+`interrupt()` only impacts a thread that is in a `WAITING` or `TIMED_WAITING` state. 
+Calling `interrupt()` on a thread in a `NEW` or `RUNNABLE` state has no impact unless 
+the code is running and explicitly checking the `isInterrupted()` method.
+
+17) 
+F
+The `lock()` method will wait indefinitely for a lock, so option A is incorrect. 
+Options B and C are also incorrect, as the correct method name to attempt to acquire 
+a lock is `tryLock()`. Option D is incorrect, as `fairness` is set to `false` by default 
+and must be enabled by using an overloaded constructor. Finally, option E is incorrect 
+because a thread that holds the lock may have called `lock()`  or  `tryLock()` multiple 
+times. A thread need to call `unlock()` once for each call to `lock()` and successful 
+`tryLock()`. Option F is the correct answer since none of the other options are valid 
+statements.
+
+
+18) 
+C, E, G
+A `Callable` lambda expression takes no values and return a generic type; therefore, 
+option C, E, and G are correct. Options A and F are incorrect because they both take an 
+input parameter. Option B is incorrect because it does not return a value. Option D is 
+not a valid lambda expression, because it is missing a semicolon at the end of the return 
+statement, which is required when inside braces, {}.
+
+
+19) 
+E, G
+The application compiles and does not thrown an exception. Even though the stream 
+is processed in sequential order, the tasks are submitted to a thread executor, which 
+may complete the tasks in any order. Therefore, the output cannot be determined ahead 
+of time, and option E is correct. Finally, the thread executor is never shut down; 
+therefore, the code will run but never terminate, making option G also correct.
+
+20) 
+F
+The key to solving this question is to remember that the `execute()` method returns 
+`void`, ot a `Future` object. Therefore, line `n1` dos not compile, and option F is 
+the correct answer. It the `submit()` method had been used instead of `execute()`, 
+option C would have been the correct answer, as the output of the `submit(Runnable)` 
+task is a `Future<?>` object that can only return `null` on its `get()` method.
+
+
+21) 
+A, D
+The `findFirst()` method guarantees the first element in the stream will be returned, 
+whether it is serial or parallel, making options A and D correct. While option B may 
+consistently print "1" at runtime, the behavior of `findAny()` on a serial stream is 
+not guaranteed, so option B is incorrect. Option C is likewise incorrect, with the 
+output being random at runtime.
+
+
+22) 
+B
+The code compiles and runs without issue. The key aspect to notice in the code is that 
+a single-thread executor is used, meaning that no task will be executed concurrently. 
+Therefore, the results are valid and predictable, with "100 100" being the output, and 
+option B is correct answer. If a thread executor with more threads was used, then the 
+`s2++`operation could overwrite each other, making the second value indeterminate at the 
+end of the program. In this case, option C would be the correct answer.
+
+23) 
+F
+The code compiles without issue, so options B, C, and D are incorrect. The `limit` on 
+the cyclic barrier is 10, but the stream can generate only up to 9 threads that reach 
+the barrier; therefore, the `limit` can never be reached, and option F is the correct 
+answer, making options A and E incorrect. Even if the `limit(9)` statement was changed 
+to `limit(10)`, the program could still hang since the JVM might not allocate 10 
+threads to the parallel stream.
+
+24) 
+A, F
+The class compiles without issue, so option A is correct. Since `getInstance()` 
+is a static method and `sellTickets()` is an instance method, like `k1` and `k4` 
+synchronize on different objects, making option D incorrect. The class is not thread-
+safe because the `addTickets()` method is not synchronized, and option E is incorrect. 
+One thread could call `sellTickets()` while another thread call `addTickets()`, possibly 
+result in bad data. Finally, option F is correct because the `getInstance()` method is 
+synchronized. Since the constructor is private, this method is the only way to create 
+an instance of `TicketManager` outside the class. The first thread to enter the method 
+will set the instance variable, and all other threads will use the existing value. 
+This a a singleton pattern.
+
+
+25) 
+C, D
+The code compiles and runs without issue, so options F and G are incorrect. The return 
+type of `performCount()` is `void`, so `submit()` is interrupted as being applied to a 
+`Runnable`expression. While `submit(Runnable)` does return a `Future<?>`, calling `get()` 
+on it always returns `null`. For this reason, option A and B are incorrect, and option C 
+is correct. The `performCount()` method can also throw a runtime exception, which will 
+then be thrown by the `get()` call as an `ExecutionException`; therefore, option D is 
+also a correct answer. Finally, it is also possible for our `performCount()` to hang 
+indefinitely, such as with a deadlock or infinite loop. Luckily, the call to `get()` 
+includes a timeout value. While each call fo `Future.get()` can wait up to a day for 
+a result, it will eventually finish, so option E is incorrect.
