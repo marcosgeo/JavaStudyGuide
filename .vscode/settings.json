@@ -2,5 +2,9 @@
   "cSpell.words": [
     "Spliterator",
     "vararg"
-  ]
+  ],
+  "java.project.sourcePaths": [
+    "."
+  ],
+  "java.project.referencedLibraries": []
 }

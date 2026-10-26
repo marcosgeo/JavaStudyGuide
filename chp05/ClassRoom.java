@@ -1,4 +1,4 @@
-package my.school;
+package chp05;
 
 public class ClassRoom {
   private int roomNumber;
