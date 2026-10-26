@@ -1,3 +1,5 @@
+package chp01;
+
 import java.util.Random;
 
 public class NumberPicker {

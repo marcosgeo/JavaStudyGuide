@@ -1,8 +1,9 @@
 # Chapter 13: Concurrency
 
 * Managing concurrent code execution
-  - Create worker threads using `Runnable` and `Callable`, manage the thread lifecycle, 
-      including automations provided by different `Executor` services and concurrent API
+  - Create worker threads using [Runnable](#creating-a-thread) and 
+    [Callable](#introducing-callable), manage the thread lifecycle, including 
+    automations provided by different `Executor` services and concurrent API
   - Develop thread-safe code, using different locking mechanisms and concurrent API
   - Process Java collection concurrently including the use of parallel stream.
 * Working with Stream and Lambda expressions
