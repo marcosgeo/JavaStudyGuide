@@ -28,8 +28,13 @@ class, and interacting with attributes.
 
 [Referencing Files and Directories](#referencing-files-and-directories)
 
+[Operating on File and Path](#operating-on-file-and-path)
+
 [Introducing I/O Streams](#introducing-io-streams)
 
+[Reading and Writing Files](#reading-and-writing-files)
+
+[Serializing Data](#serializing-data)
 
 
 ## Referencing Files and Directories
@@ -274,6 +279,8 @@ Path zooPath2 = Path.of("/home", "tiger", "data", "stripes.txt");
 Path zooPath3 = Paths.get("/home/tiger/data/stripes.txt");
 path zooPath3 = Paths.get("/home", "tiger", "data", "stripes.txt");
 ```
+
+[back to top](#chapter-14-inputoutput)
 
 
 ## Operating on File and Path
@@ -1117,3 +1124,550 @@ order of the parameters.
 
 
 ## Introducing I/O Streams
+
+Now that we have the basics out of the way, let's move on to I/O streams, which 
+are far more interesting. In this section, we will see how to use I/O streams to read 
+and write data. The "I/O" refers to the nature of how data is accessed, either by reading 
+the data from a resource (input) or by writing the data to a resource (output).
+
+When we refer to _I/O streams_ in this chapter, we are referring to the ones found 
+in the `java.io` API. If we just say _streams_, it means the ones from Chapter 10.
+
+
+### Understanding I/O Stream Fundamentals
+
+The contents of a file may be accessed or written via an I/O stream, which is a 
+list of data elements presented sequentially. An I/O stream can be conceptually though 
+of as a long, nearly never-ending stream of water with data presented on wave at a time.
+
+We demonstrate this principle in Figure 14.5. The I/O stream is so large that once we 
+start reading it, we have no idea where the beginning or the end is.  We just have a 
+pointes to our current position in the I/O stream and read data one block at a time.
+
+![visual representation of i-o stream](visual_representation_io_stream.png)
+
+**Figure 14.5: Visual representation of an I/O stream**
+
+Each type of I/O stream segments data into a wave or block in a particular way. 
+For example, some I/O stream classes read or write data as individual bytes. Other 
+I/O stream classes read or write individual characters or string of characters. On top 
+of that, some I/O stream classes read or write larger groups of bytes or characters at 
+a time, specifically those with the word "Buffered" in their name.
+
+---
+
+Although the `java.io API` is full of I/O streams that handle characters, string, 
+groups of bytes, and so on, nearly all are built on top of reading or writing an 
+individual byte or an array of bytes at a time. Higher-level I/O streams exist for 
+convenience as well as performance.
+
+---
+
+Although I/O streams are commonly used with file I/O, they are more generally used 
+to handle the reading/writing of any sequential data source. For example, we might 
+construct a Java application that submits data toa website using an output stream 
+and read the result via an input stream.
+
+---
+**I/O Streams Can Be Big**
+
+When writing code where we don't know what the I/O stream size will be at runtime, 
+it may be helpful to visualize an I/O stream as being so large that all of the data 
+contained in it could not possibly fit into memory. For example, a 1 TB file could 
+not be stored entirely in memory by most computer systems. The file can still be 
+read and written by a program with very little memory, since the I/O stream allows 
+the application to focus on only a small portion of the overall I/O stream at any 
+given time.
+
+---
+
+
+### Learning I/O Stream Nomenclature
+
+The `java.io API` provides numerous classes for creating, accessing, and manipulating 
+I/O streams, so many that it tends to be overwhelming. We review the major differences 
+between each I/O stream class and show how to distinguish between them.
+
+
+#### Storing Data as Bytes
+
+Data is stored in a file system (and memory) as a 0 or 1, called a _bit_. Since it's 
+really hard for humans to read/write data that is just 0s and 1s, they are grouped into 
+a set of 8 bits, called a _byte_.
+
+What about the Java byte primitive type? As we learn later, when we use I/O streams, 
+values are often read or written using byte values and arrays.
+
+#### Byte Stream vs. Character Streams
+
+The `java.io API` defines two sets of I/O streams classes for reading and writing 
+I/O streams: byte I/O streams and character I/O streams. We use both types of I/O 
+streams throughout this chapter.
+
+**Differences between Byte and Character I/O streams**
+- Byte I/O streams read/write binary data (0s and 1s) and have class names that 
+    end in "InputStream" or "OutputStream".
+- Character I/O streams read/write text data and have class names that end in 
+    "Reader" or "Writer".
+
+The API frequently includes similar classes for both byte and character I/O streams, 
+such as `FileInputStream` and `FileReader`. The difference between the two classes is 
+based on how the byte are read or written.
+
+It is important to remember that even though character I/O streams do not contain 
+the word "Stream" in their class name, the are still I/O streams. The use of "Reader/
+Writer" in the name is just to distinguish them from byte streams.
+
+The byte I/O streams are primarily used to work with binary data, such as an image 
+or executable file, while character I/O streams are used to work with text files. For 
+example, we can use a "Writer" class to output a `String` value to a file without 
+necessarily having to worry about he underlying character encoding of the file.
+
+The _character encoding_ determines how characters are encoded and stored in bytes 
+in an I/O stream and later read back or decoded as characters. Although this may sound 
+simple, java supports wide variety of character encodings, ranging from ones that may 
+use one byte for Latin characters, UTF-8 and ASCII for example, to using two or more 
+bytes per character, such as UTF-16.
+
+---
+**Character Encoding in Java
+
+In Java, the character encoding can be specified using the `Charset` class by 
+passing a name value to the static `Charset.forName()` method, such as in the 
+following examples
+```
+Charset usAsciiCharset = Charset.forName("US-ASCII");
+Charset utf8Charset = Charset.forName("UTF-8");
+Charset uft16Charset = Charset.forName("UTF-16");
+```
+
+Java supports numerous character encodings, each specified by a different standard 
+name value.
+
+---
+
+
+#### Input vs Output Streams
+
+Most `InputStream` classes have a corresponding `OutputStream` class, and vice 
+versa. For example, the `FileOutputStream` class writes data that can be read by a 
+`FileInputStream`. When we understand the features of a particular Input or Output 
+stream class, we should naturally know what its complementary class does.
+
+It follows, then, that most Reader classes have a corresponding Writer class. For 
+example, the `FileWriter` class writes data that can be ready be a `FileReader`. There 
+are exceptions to this rule. For example, `PrintWriter` has no accompanying "PrintReader" 
+class. Likewise, the `PrintStream` is an OutputStream that has no corresponding "Input
+Stream" class. It also does not have "Output" in its names. We discuss theses classes 
+later in this chapter.
+
+
+#### Low-Level vs. High-Level Streams
+
+Another way that we can familiarize ourself with the `java.io API` is by segmenting 
+I/O streams into low-level and high-level streams.
+
+A _low-level stream_ connects directly with the source of the data, such as a file, 
+an array, or a String. Low-level I/O streams process the raw data or resource and 
+are accessed in a direct and unfiltered manner. For example, `FileInputStream` is 
+a class that reads file data one byte at a time.
+
+Alternatively, a _high-level stream_ is built on top of another I/O stream using 
+wrapping. _Wrapping_ is the process by which an instance is passed to the constructor 
+of another class, and operation on the result instance are filtered an applied to the 
+original instance. For example, take a look a the `FileReader` and `BufferedReader` 
+object in the following sample code:
+```
+try (var br = new BufferedReader(new FileReader("zoo-data.txt"))) {
+  System.out.println(br.readLine());
+}
+```
+
+In this example, `FileReader` is the low-level I/O stream, whereas `BufferedReader` is 
+the high-level I/O stream that takes a `FileReader` as input. Many operations on the 
+high-level I/O stream pass through as operations to the underlying low-level I/O stream, 
+such as `read()` or `close()`. Other operation override or add new functionality to the 
+low-level I/O stream methods. The high-level I/O stream may add new methods, such as 
+`readline()`, as well as performance enhancements for reading and filtering the 
+low-level data.
+
+High-level I/O streams can also take other high-level I/O streams as input. For example, 
+although the following code might seem a little odd at first, the style of wrapping an 
+I/O stream is quite common in practice:
+```
+try (var ois = new ObjectInputStream(
+      new BufferedInputStream(
+        new FileInputStream("zoo-data.txt")
+      )
+    )) {
+  System.out.println(ois.readObject());
+}
+```
+
+In this example, the low-level `FileInputStream` interacts directly with the file, 
+which is wrapped by a high-level `BufferedInputStream`  to improve performance. Finally, 
+the entire object is wrapped by another high-level `ObjectInputStream`, which allows 
+us to interpret the data as a Java object.
+
+For the exam, the only low-level stream classes we need to be familiar with as the ones 
+that operate on file. The rest of the non-abstract stream classes are all high-level streams.
+
+
+#### Stream Base Classes
+
+The `java.io` library defines four abstract classes that are the parents of all I/O 
+stream classes defined within the API: InputStream, OutputStream, Reader, and Writer.
+
+The constructors of high-level I/O streams often take a reference to the abstract class. 
+For Example, `BufferWriter` takes a `Writer` object as input, which allows it to take 
+any subclass of `Writer`.
+
+We have to pay attention with mixing and matching I/O stream classes that are not 
+compatible with each other. For example, take a look at each of the following examples 
+and see whether you can determine why they do not compile:
+```
+new BufferedInputStream(new FileReader("z.txt"));         // does not compile
+new BufferedWriter(new FileOutputStream("z.txt"));        // does not compile
+new ObjectInputStream(new FileOutputStream("z.txt"));     // does not compile
+new BufferedInputStream(new InputStream());               // does not compile
+```
+
+The first two examples do not compile becaus they mix Reader/Writer classes with 
+InputStream/OutputStream classes, respectively. The third example does not compile 
+because we are mixing an OutputStream with an InputStream. Although it is possible 
+to read data from an InputStream and write it to an OutputStream, wrapping the I/O 
+stream is not the way to do so. As we will see later in this chapter, the data must 
+be copied over. Finally, the last example does not compile because InputStream is 
+an abstract class, and therefore we cannot create an instance of it.
+
+
+#### Decoding I/O Class Name
+
+The name of the I/O class ofter gives us context clues to what the class does. For 
+example, without need to look it up, it should be clear that `FileReader` is a class 
+that reads data from a file as character or strings. Furthermore, `ObjectOutputStream` 
+sounds like a class that writes object data to a byte stream. Table 14.7 lists the 
+abstract base classes that all I/O streams inherit from.
+
+**Table 14.7: The java.io abstract stream base classes**
+
+![java.io abstract base classes](io_abstract_base_classes.png)
+
+
+The Table 14.8 list the concrete I/O streams that we should be familiar with for 
+our daily life as developer. Note that most of the information about each I/O stream, 
+such as whether it is an input or an output stream or whether it access data using 
+bytes or character, can be decoded by the name alone.
+
+**Table 14.8: The java.io concrete I/O stream classes**
+
+![java.io concrete i/o stream classes](io_concrete_stream_classes.png)
+
+
+Keep Tables 14.7 and 14.8 handy as we learn more about I/O streams in this chapter. 
+We discuss these in more detail, including examples of each.
+
+[back to top](#chapter-14-inputoutput)
+
+
+## Reading and Writing Files
+
+There are a number of ways to read and write from a file. We show them in this 
+section by copying one file to another.
+
+### Using I/O Streams
+
+I/O streams are all about reading/writing data, so it shouldn't be a surprise 
+that them most important methods are `read()` and `write()`. Both `InputStream` and 
+`Reader` declare a `read()` method to read byte data from an I/O stream. Likewise, 
+`OutputStream` and `Writer` both define a `write()` method to write a byte to the 
+stream.
+
+The following `copyStream()` methods show an example of reading all of the values 
+of an `InputStream` and `Reader`and writing them to an `OutputStream` and `Writer`, 
+respectively. In both examples, -1 is used to indicate the end of the stream.
+```
+void copyStream(InputStream in, OutputStream out) throws IOException {
+  int b;
+  while ( (b = in.read()) != -1 ) {
+    out.write(b);
+  } 
+}
+
+void copyStream(Reader in, Writer out) throws IOException {
+  int b;
+  while ( (b = in.read()) != -1 ) {
+    out.write(b);
+  }
+}
+```
+
+Since earlier was said we are reading and writing bytes, why do the methods use 
+`int` instead of `byte`? Remember, the `byte` data type has a range of 256 characters. 
+They needed an extra value to indicate the end of an I/O stream. The authors of Java 
+decided to use a larger data type, `int`, so that special values like -1 would indicate 
+the end of an I/O stream. The output stream classes use `int` as well, to be consistent 
+with the input stream classes.
+
+Reading and writing on byte at a time isn't a particularly efficient way of doing this. 
+Luckily, there are overloaded methods for reading an writing multiple bytes at a time. 
+The `offset` and `length` values are applied to the array itself. For example, an offset 
+of 3 and length of 5 indicates that the stream should read up to five bytes/characters 
+of data and put them into the array starting with position 3. Let's look at an example:
+```
+10: void copyStream(InputStream in, OutputStream out) throws IOException {
+11:   int batchSize = 1024;
+12:   var buffer = new byte[batchSize];
+13:   int lengthRead;
+14:   while ( (lengthRead = in.read(buffer. 0, batchSize)) > 0 ) {
+15:     out.write(buffer, 0, lengthRead);
+17:     out.flush();
+16:   }
+18: }
+```
+
+Instead of reading the data one byte at a time, we read and write up to 1024 bytes 
+at a time on line 14. The return value `lengthRead` is critical for determining whether 
+we are at the end of the stream and knowing how many bytes we should write into our 
+output stream.
+
+Unless out file happens to be a multiple of 2014 bytes, the last iteration of the while 
+loop will write some value less than 1014 bytes. For example, if the buffer size is 
+1024 bytes and the file size is 1054 bytes, the last read will be only 30 bytes. If 
+we ignored this return value and instead wrote 1024 bytes, 994 bytes from the previous 
+loop would be written to the end of the file.
+
+We also added a `flush()` method on line 16 to reduce the amount of data lost if 
+the application terminates unexpectedly. When data is written to an output stream, 
+the underlying operating system does not guarantee that the data will make it to the 
+file system immediately. The `flush()` method request that all accumulated data be 
+written immediately to disk. It is not without cost, though. Each time it is used, it 
+may cause a noticeable delay in the application, especially for large files. Unless 
+the data that we are writing is extremely critical, the `flush()` method should be 
+used only intermittently. For example, it should not necessarily be called after 
+every write, as it is in this example.
+
+Equivalent methods exist on `Reader` and `Writer`, but they use `char` rather 
+than `byte`, making the equivalent `copyStream()` method very similar. The previous 
+example makes reading and writing a file look like a lot to think about. That's 
+because it only uses low-level I/O streams. Let's try again using high-level streams.
+```
+26: public void copyTextFile(File src, File dest) throws IOException {
+27:   try (
+28:       var reader = new BufferedReader(new FileReader(src));
+29:       var writer = new BufferedWriter(new FileWriter(dest));
+30:     ) {
+31:     String line = null;
+32:     while ( (line = reader.readLine()) != null ) {
+33:       writer.write(line);
+34:       writer.newLine();
+35:     }
+36:   }
+37: }
+```
+
+The key is to choose the most useful high-level classes. In this case, we are 
+dealing with a `File`, so we want to use a `FileReader` and `FileWriter`. Both classes 
+have constructors that can take either a `String` representing the location of a `File` 
+directly.
+
+If the source file does not exist, a `FileNotFoundException`, which inherits 
+`IOException`, will be thrown. If the destination file already exists, this implementation 
+will overwrite it. We can pass an optional boolean second parameter fo `FileWriter` for an 
+append flag if we want to change this behavior.
+
+We also chose to use a `BufferReader` and `BufferWriter` so we can read a whole line 
+at a time. This gives us the benefits of reading batches of characters on line 32 without 
+having to write custom logic. Line 33 writes out the whole line of data at once. Since 
+reading a line strips the line breaks, we add those back on line 34. Lines 28 and 29 
+demonstrate chaining constructors. The try-with-resource constructor takes care of 
+closing all objects in the chain.
+
+Now imagine that we wanted byte data instead of characters. We would need to 
+choose different high-level classes: `BufferedInputStream`, `BufferedOutputStream`, 
+`FileInputStream`, and `FileOutputStream`. We would call `readAllBytes()` instead 
+of `readLine()` and store the result in a `byte[]` instead of a `String`. Finally, 
+we wouldn't need to handle new lines since the data is binary.
+
+We can do a little better than `BufferedOutputStream` and `BufferedWriter` by using 
+a `PrintStream` and `PrintWriter`. These class contain four key methods. The `print()` 
+and `println()` methods print data with and without a new line, respectively. There 
+are also the `format()` and `printf()` methods, which we describe in the section 
+on user interactions.
+```
+public void copyTexFile(File src, File dest) throws IOException {
+  try (
+    var reader = new BufferedReader(new FileReader(src));
+    var writer = new PrintWriter(new FileWriter(dest));
+  ) {
+    String line = null;
+    while ( (line = reader.readLine()) != null )
+      writer.println(line);
+  }
+}
+```
+
+While we used a `String`, there are numerous overloaded version of `println()`, 
+which take everything from primitives and `String` values to objects. Under the 
+covers, these methods often just perform `String.valueOf()`.
+
+The print stream classes have the distinction of being the only I/O stream classes 
+we cover that do no have corresponding input stream classes. And unlike `OutputStream` 
+classes, `PrintStream` does not have "Output" in its name.
+
+Unlike the majority of the other I/O streams we've covered, the methods in the print 
+stream classes do not throw any checked exceptions. If the did, we would be required 
+to catch a checked exception any time we called `System.out.print()`! Yes, we've been 
+regularly using a `PrintStream` throughout this book. Both, `System.out` and `System.err` 
+are `PrintStream` objects. Likewise, `System.in`, often useful for reading user input, 
+is an `InputStream`.
+
+The line separator is `\n` or `\r\n`, depending on the operating system. The `println()` 
+method takes cre of this for us. If we need to get the character directly, either of the 
+following will return it for us:
+```
+System.getProperty("line.separator");
+System.lineSeparator();
+```
+
+
+### Enhancing with _Files_
+
+The NIO.2 APIs provide even easier ways to read and write a file using the `Files` 
+class. Let's start by looking at three ways of copying a file by reading in the data 
+and writing it back:
+```
+private void copyPathAsString(Path input, Path output) throws IOException {
+  String string = Files.readString(input);
+  Files.writeString(output, string);
+}
+
+private void copyPathAsBytes(Path input, Path output) throws IOException {
+  byte[] bytes = Files.readAllBytes(input);
+  Files.write(output, bytes);
+}
+
+private void copyPathAsLines(Path input, Path output) throws IOException {
+  List<String> lines = Files.readAllLines(input);
+  Files.write(output, lines);
+}
+```
+
+That's pretty concise! We can read a `Path` as a `String`, a `byte` array, or a 
+`List`. We have to be aware that the entire file is read at once for all three of 
+these, thereby storing all of the contents of the file in memory at the same time. 
+It the file is significantly large, we may trigger an `OutOfMemoryError` when trying 
+to lead all of it into memory. Luckily, there is an alternative. This time, we print 
+out the file as we read it.
+```
+private void readLazily(Path path) throws IOException {
+  try (Stream<String> s = Files.lines(path)) {
+    s.forEach(System.out::println);
+  }
+}
+```
+
+Now the contents of the file are read and processed lazily, which means that only 
+a small portion of the file is stored in memory at any given time. Taking things one 
+step further, we can leverage other stream methods for a more powerful example.
+```
+try (var s = Files.lines(path)) {
+  s.filter( f -> f.startsWith("WARN:"))
+    .map( f -> f.substring(5))
+    .forEach(System.out::println);
+}
+```
+
+This sample code searches a log for lines that start with WARN:, outputting the 
+text that follows. Assuming that the input file `sharks.log` is as follows:
+```
+INFO:Server starting
+DEBUG:Processes available = 10
+WARN:No database could be detected
+DEBUG:Processes available reset to 0
+WARN:Performing manual recovery
+INFO:Server successfully started
+```
+
+Then the sample output would be the following:
+```
+No database could be detected
+Performing manual recovery
+```
+
+As we can see, we have the ability to manipulate files in complex ways, often 
+with only a few short expressions.
+
+---
+**_Files.readAllLines()_ vs _Files.lines()_**
+
+For the exam, we need to know the difference between `readAllLines()` and `lines()`. 
+Both of these examples compile and run:
+```
+Files.readAllLines(Paths.get("birds.txt")).forEach(System.out::println);
+Files.lines(Paths.get("birds.txt")).forEach(System.out::println);
+```
+
+The first line reads the entire file into memory and performs a print operation 
+on the result, while the second line lazily processes each line and prints it as 
+it is read. The advantage of the second code snippet is that it does not require 
+the entire file to be stored in memory at any time.
+
+We should also be aware of when they are mixing incompatible types on the exam.
+Do you see why the following does not compile?
+```
+Files.readAllLines(Paths.get("birds.txt"))
+  .filter( s -> s.length() > 2)
+  .forEach(System.out::println);
+```
+
+The `readAllLines()` method returns a `List`, not a `Stream`, so the `filter()` 
+method is not available.
+
+---
+
+
+### Combining with _newBufferedReader()_ and _newBufferedWriter()_
+
+Sometimes we need to mix I/O streams and NIO.2. Conveniently, `Files` includes 
+two convenience methods for getting I/O streams.
+```
+private void copyPath(Path input, Path output) throws IOException {
+  try (
+    var reader = Files.newBufferedReader(input);
+    var writer = Files.newBufferedWriter(output);
+  ) {
+    String line = null;
+    while ( (line = reader.readLine()) != null ) {
+      writer.write(line);
+      writer.newLine();
+    }
+  }
+}
+```
+
+We can wrap I/O stream constructors to produce the same effect, although it's 
+a lot easier to use the factory method. The first method, `newBufferedReader()`, 
+reads the file specified ant the `Path` location using a `BufferedReader` object.
+
+
+### Reviewing Common Read and Write Methods
+
+Table 14.9 reviews the public common I/O stream methods we should know for 
+reading and writing files. We also include `close()` and `flush()` since they 
+are used when performing these actions. Table 14.10 does the same for common 
+public NIO.2 read and write methods.
+
+**Table 14.9: Common I/O read and write methods**
+
+![common io read and write methods](io_common_read_write_methods.png)
+
+
+**Table 14.10: Common NIO.2 read and write methods**
+
+![nio 2 common read and write methods](nio_common_read_write_methods.png)
+
+[back to top](#chapter-14-inputoutput)
+
+
+## Serializing Data
