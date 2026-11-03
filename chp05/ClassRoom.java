@@ -1,7 +1,7 @@
 package chp05;
 
 public class ClassRoom {
-  private int roomNumber;
+  public int roomNumber;
   protected static String teacherName;
   static int globalKey = 54321;
   public static int floor = 3;

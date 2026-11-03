@@ -1,9 +1,10 @@
-package zoo.visitor;
+package chp12.service.visitor.zoo.visitor;
 
 import java.util.*;
 
-import zoo.tours.api.*;
-import zoo.tours.reservations.*;
+import chp12.service.api.zoo.tours.api.*;
+import chp12.service.reservation.zoo.tours.reservations.TourFinder;
+
 
 public class Tourist {
   public static void main(String[] args) {

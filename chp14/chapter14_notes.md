@@ -36,6 +36,8 @@ class, and interacting with attributes.
 
 [Serializing Data](#serializing-data)
 
+[Interacting with Users](#interacting-with-users)
+
 
 ## Referencing Files and Directories
 
@@ -1671,3 +1673,570 @@ public NIO.2 read and write methods.
 
 
 ## Serializing Data
+
+Throughout this book we have been managing out data model using classes, so it 
+makes sense that we would want to save these objects between program executions. 
+Data about our zoo animal's health wouldn't be particularly useful if it hat to 
+be entered every time the program runs.
+
+We can certainly use the I/O stream classes we've learned about so far to store 
+text and binary data, but we still have to figure out how to put the data in the 
+I/O stream and then decode it later. There are various file formats like XML and 
+CSV we can standardize to, but we often have to build the translation ourself.
+
+Alternatively, we can use serialization to solve the problem of how to convert 
+objects to/from an I/O stream. _Serialization_ is the process of converting an 
+in-memory object to a byte stream. Likewise, _deserialization_ is the process of 
+converting from a byte stream into an object. Serialization often involves writing 
+an object to a stored or transmittable format, while deserialization is the 
+reciprocal process.
+
+Figure 14.6 shows a visual representation of serializing and deserializing a 
+`Giraffe` object to and from a `giraffe.txt` file.
+
+![serialization process](serialization_process.png)
+
+**Figure 14.6: Serialization process**
+
+Int this section, we will see how Java provides built-in mechanism for serializing 
+and deserializing I/O streams of objects directly to and from disk, respectively.
+
+
+### Applying the _Serializable_ Interface
+
+To serialize an object using the I/O API, the object must implement the 
+`java.io.Serializable` interface. The `Serializable` interface is a marker 
+interface, which means it does not have any methods. Any class can implement the 
+`Serializable` interface since there are no required methods to implement.
+
+Since `Serializable` is a marker interface with no abstract members, why not just 
+apply it to ever class? Generally speaking, we should only mark data-oriented classes 
+as serializable. Process-oriented classes, such as the I/O streams discussed in this 
+chapter or the `Thread` instance we learned about in Chapter 13, are often poor 
+candidates for serialization, as the internal state of those classes tends to 
+be ephemeral or short-lived.
+
+The purpose of using the `Serializable` interface is to inform any process 
+attempting to serialize the object that we have taken the proper steps to make 
+the object serializable. All Java primitives and many ot the built-in Java classes 
+that we have worked with throughout this book are `Serializable`. For example, 
+this class can be serialized:
+
+```
+import java.io.Serializable;
+
+public class Gorilla implements Serializable {
+  private static final long serialVersionUID = 1L;
+  private String name;
+  private int age;
+  private Boolean friendly;
+  private transient String favoriteFood;
+
+  // constructors / getters / setters / toString() omitted
+}
+```
+
+In this example, the `Gorilla` class contains three instance members (name, age, 
+friendly) that will be save to an I/O stream if the class is serialized. Note that 
+since `Serializable` is not part of the `java.lang` package, it must be imported 
+or referenced with the package name.
+
+What about the `favoriteFood` field that is marked `transient`? Any field that is 
+marked `transient` will not be saved to an I/O stream when the class is serialized. 
+We discuss that in more detail next.
+
+---
+**Maintaining a _serialVersionUID_**
+
+It's a good practice to declare a static `serialVersionUID` variable in every 
+class that implements `Serializable`. The version is stored with each object as 
+part of serialization. Then, every time the class structure changes, this value 
+is updated or incremented.
+
+Perhaps out `Gorilla` class receives a new instance member `Double banana`, or 
+maybe the `age` field is renamed. The idea is a class could have been serialized 
+with an older version of the class and deserialized with a newer version of the 
+class.
+
+The `serialVersionUID` helps inform the JVM that the stored data may not match 
+the new class definition. If an older version of the class is encountered during 
+deserialization, a `java.io.InvalidClassException` may be thrown. Alternatively, 
+some APIs support converting data between versions.
+
+---
+
+### Making Data _transient_
+
+The `transient` modifier can be used for sensitive data of the class, like a 
+password. There are other objects it does not make sense to serialize, like the 
+state of an in-memory `Thread`. If the object is part of a serializable object, 
+we just mark it `transient` to ignore these select instance member.
+
+What happens to data marked `transient` on deserialization? It reverts to its 
+default Java values, such as 0.0 for `double`, or `null` for an object. We see 
+examples of this shortly when we preset the object stream classes.
+
+Making `static` fields `transient` has little effect on serialization. Other 
+than the `serialVersionUID`, only the instance members of a class are serialized.
+
+
+### Ensuring that a Class is Serializable
+
+Since `Serializable` is a marker interface, we might think there are no rules to 
+using it. Not quite. Any process attempting to serialize an object will throw a 
+`NotSerializableException` if the class does not implement the `Serializable` 
+interface properly.
+
+**How to Make a Class Serializable**
+- The class must be marked `Serializable`
+- Every instance member of the class must be serializable, marked `transient`, 
+    or have a `null` value at the time of serialization.
+
+We need to be careful with the second rule. For a class to be serializable, we 
+must apply the second rule recursively. Do you see why the following `Cat` class 
+is not serializable?
+
+```
+public class Cat implements Serializable {
+  private Tail tail = new Tail();
+}
+
+public class Tail implements Serializable {
+  private int Fur fur = new Fur();
+}
+
+public class Fur {}
+```
+
+`Cat` contains an instance of `Tail`, and both of those classes are marked 
+`Serializable`, so no problems there. Unfortunately, `Tail` contains an instance 
+of `Fur` that is not marked `Serializable`.
+
+Either of the following changes fixes the problem and allow `Cat` to be serialized:
+```
+public class Tail implements Serializable {
+  private transient Fur fur = new Fur();
+}
+
+public class Fur implements Serializable {}
+```
+
+We could also make our `tail` or `fur` instance members `null`, although this 
+would make `Cat` serializable only for particular instances, rather than to all
+instances.
+
+**Serializing Records**
+A record follows the same rules as other types of classes with respect to 
+whether it can be serialized: they need to implement the `Serializable` interface.
+
+
+### Storing Data with _ObjectOutputStream_ and _ObjectInputStream_
+
+The `ObjectInputStream` class is used to deserialize an object, while the 
+`ObjectOutputStream` is used to serialize an object. The are high-level streams 
+that operate on existing I/O streams. While both of these classes contain a number 
+of methods for built-in data type like primitives, the two methods we need to know 
+for the exam are the one related to working with objects.
+
+```
+// ObjectInputStream
+public Object readObject() throws IOException, ClassNotFoundException {}
+
+// ObjectOutputStream
+public void writeObject(Object obj) throws IOException {}
+```
+
+Note the parameters, return types and exception thrown. We now provide a sample 
+method that serialize a list of `Gorilla` objects to a file.
+
+```
+void saveToFile(List<Gorilla> gorillas, File dataFile) throws IOException {
+  try (
+    var out = new ObjectOutputStream(new BufferedOutputStream(
+      new FileOutputStream(dataFile)
+    ));
+  ) {
+    for (Gorilla gorilla : gorillas)
+      out.writeObject(gorilla);
+  }
+}
+```
+
+Pretty easy, right? Notice that we start with a file stream, wrap it in a buffered 
+I/O stream to improve performance, and then wrap that with an object stream. Serializing 
+the data is as simple as passing it to `writeObject()`.
+
+Once the data is stored in a file, we can deserialize it by using the following method:
+```
+List<Gorilla> readFromFile(File dataFile) throws IOException, ClassNotFoundException {
+  var gorillas = new ArrayList<Gorilla>();
+  try (
+    var in = new ObjectInputStream(new BufferedInputStream(
+      new FileInputStream(dataFile)
+    ));
+  ) {
+    while (true) {
+      var object = in.readObject();
+      if (object instanceof Gorilla g) {
+        gorillas.add(g);
+      }
+    }
+  } catch (EOFException e) {
+    // file end reached. load completed
+  }
+  return gorillas;
+}
+```
+
+Not as simple as our save method. When calling `readObject()`, `null` and `-1` do 
+not have any special meaning, as someone might have serialized objects with those 
+values. Unlike our earlier techniques for reading methods from an input stream, we 
+need to use an infinite loop to process the data, which throws an `EOFException` 
+when the end of the I/O stream is reached.
+
+If our program happens to know the number of object in the I/O stream, we can call 
+`readObject()` a fixed number of times, rather than using an infinite loop.
+
+Since the return type of `readObject()` is `Object`, we need to check the type 
+before obtaining access to our Gorilla properties. Notice that `readObject()` 
+declares a _checked_ `ClassNotFoundException` since the class might not be available 
+od deserialization.
+
+The following code snipped shows how to call the serialization methods:
+```
+var gorillas = new ArrayList<Gorilla>();
+gorillas.add(new Gorilla("Grodd", 5, false));
+gorillas.add(new Gorilla("Ishmael", 8, true));
+File dataFile = new File("gorillas.data");
+
+saveToFile(gorillas, dataFile);
+var gorillasFromDist = readFromFile(dataFile);
+System.out.print(gorillasFromDisk);
+```
+
+Assuming that the `toString()` method was properly overridden in the `Gorilla` 
+class, this prints the following at runtime.
+```
+[[name=Grood, age=5, friendly=false],
+[name=Ishmael, age=8, friendly=true]]
+```
+
+`ObjectInputStream` inherits an `available()` method from `InputStream` that we 
+might think can be used to check for the end of the I/O stream rather than throwing 
+an `EOFException`. Unfortunately, this only tell us the number of blocks tht can be 
+read without blocking another thread. In other words, it can return 0 even if there 
+area more bytes to be read.
+
+
+### Understanding the Deserialization Creation Process
+
+For the exam, we need to understand how a deserialized object is created. When 
+we deserialize an object, _the constructor ot the serialized class, along with_  
+_any instance initializer, is not called when the object is created_. Java will 
+call the no-arg constructor of the first non-serializable parent class it can 
+find in the class hierarchy. In our `Gorilla` example, this would just be the 
+no-arg constructor of `Object`.
+
+As we stated earlier, any static or transient fields are ignored. Values that are 
+not provided will be given their default Java value, such as `null` for `String`, 
+or `0` for `int` values.
+
+Let's take a look at a new `Chimpanzee` class. this time we do list the constructors 
+to illustrate that none of them is used on deserialization.
+```
+import java.io.Serializable;
+
+public class Chimpanzee implements Serializable {
+  public static final long serialVersionUID = 2L;
+  private transient String name;
+  private transient int age = 10;
+  private static char type = 'C';
+  { this.age = 14; }                     // static initializer
+
+  public Chimpanzee() {
+    this.name = "Unknown";
+    this.age = 12;
+    this.type = 'Q';
+  }
+
+  public Chimpanzee(String name, int age, char type) {
+    this.name = name;
+    this.age = age;
+    this.type = type
+  }
+
+  // getter / setters / toString()  omitted
+}
+```
+
+Assuming we rewrite our previous serialization and deserialization methods to 
+process a `Chimpanzee` object instead of a `Gorilla` object, what do you think 
+the following print?
+```
+var chimpanzees = new ArrayList<Chimpanzee>();
+chimpanzees.add(new Chimpanzee("Ham", 2 'A'));
+chimpanzees.add(new Chimpanzee("Enos", 4, 'B'));
+
+File dataFile = new File("chimpanzee.data");
+saveToFile(chimpanzees, dataFile);
+
+var chimpanzeesFromDisk = readFromFile(dataFile);
+System.out.println(chimpanzeeFromDisk);
+```
+
+None of the instance members are serialized to a file. The `name` and `age` variables 
+are both marked `transient`, while the `type` variable is `static`.
+
+Upon deserialization, none of the constructor in `Chimpanzee` is called. Even the 
+no-arg constructor that sets the values [name=Unknown,age=12,type=Q] is ignored. The 
+instance initializer that set `age` to 14 is also not executed.
+
+In this case, the `name` variable is initialized to `null` since that's the default 
+value for String in Java. Likewise, the `age` variable is inherited to `0`. The program 
+print the following, assuming the `toString()` method is implemented:
+```
+[
+  [name=null,age=0,type=B],
+  [name=null,age=0,type=B]
+]
+```
+
+What about the `type` variable? Since it's `static` , it will display whatever 
+value was set last. If the data is serialized and deserialization within the same 
+execution, it will display `B`, since that was the last `Chimpanzee` we created. 
+On the other hand, if the program performs the deserialization and print on startup, 
+it will print `C`, since that is the value the class is initialized with.
+
+For the exam, we need to understand that the constructor and any instance 
+initialization defined in the serialized class are ignored during the deserialization 
+process. Java only calls the constructor of the first non-serializable parent 
+class in the class hierarchy.
+
+Finally, let's add a subclass:
+```
+public class BabyChimpanzee extends Chimpanzee {
+  private static final long serialVersionUID = 3L;
+
+  private String mother = "Mom";
+
+  public BabyChimpanzee(String name, char type) {
+    super(name, 0, type);
+  }
+
+  // getter / setter / toString() omitted
+}
+```
+
+Notice that this subclass is serializable because the superclass has implemented 
+`Serializable`. We now have an addition instance variable. The code to serialize 
+and deserialize remains the same. We can even still cast to `Chimpanzee` because 
+this is a subclass.
+
+[back to top](#chapter-14-inputoutput)
+
+
+## Interacting with Users
+
+Java includes numerous classes for interacting with the user. For example, we 
+might want to write an application that asks a user to log in and then print a 
+success message. This section contains numerous technique for handling and 
+responding to user input.
+
+
+### Printing Data to the User
+
+Java includes two `PrintStream` instances fro providing information to the user: 
+`System.out` and `System.err`. The syntax for calling and using `System.err` is 
+the same as `System.out` but is used to report errors to the user in a separate 
+I/O stream from the regular output information.
+```
+try (var in = new FileInputStream("zoo.txt")) {
+  System.out.println("Found file!");
+} catch (FileNotFoundException e) {
+  System.err.println("File not found!");
+}
+```
+
+How do they differ in practice? In part, that depends on what is executing the 
+program. For example, if we are running from a command prompt, they will likely 
+print text in the same format. On the other hand, if we are working in an integrated 
+development environment (IDE), they might print the `System.err` text in a different 
+color. Finally, if the code is being run on a server, the `System.err` stream 
+might write to a different log file.
+
+---
+**Using Logging APIs
+
+While `System.out` and System.err` are incredibly useful fro debugging stand-alone 
+os simple applications, they are rarely used in professional software development. 
+Most application rely on a logging service or API.
+
+While many logging APIS are available, they tend to share a number o similar 
+attributes. First we create a static logging object in each class. Then we log a 
+message with an appropriate logging level: `debug()`, `info()`, `warn()`, or `error()`. 
+The `debug()` and `info()` methods are useful as they allow developer to log things 
+that aren't errors but may be useful.
+
+---
+
+### Reading Input as an I/O Stream
+
+The `System.in` return an `InputStream` and is used to retrieve text input from 
+the user. It is commonly wrapped with a `BufferedReader` via an `InputStreamReader` 
+to use the `readline()` method.
+```
+var reader = new BufferedReader(new InputStreamReader(System.in));
+String userInput = reader.readLine();
+System.out.println("You entered: " + userInput);
+```
+
+When executed, this application first fetches text from the user until the user 
+press the Enter key. It then outputs the text the user entered to the screen.
+
+
+### Closing System Streams
+
+You might noticed that we never created or closed `System.out`, `System.err`, and 
+`System.in` when we used them. In fact, these are the only I/O streams in the entire 
+chapter that we did no use a try-with-resource block on.
+
+Because these are static objects, the `System` streams are shared by the entire 
+application. The JVM created and opens them for us. They can be used in a try-with-
+resources statement o by calling `close()`, although _closing them is not recommended_. 
+Closing the `System` streams makes them permanently unavailable for all threads in 
+the remainder of the program.
+
+What do you think the following code snipped prints?
+```
+try (var out = System.out) {}
+System.out.println("Hello");
+```
+
+Noting is printing here. The methods of `PrintStream` do not throw any checked 
+exceptions and rely on the `checkError()` to report errors, so they fail silently.
+What about this example?
+```
+try (var err = System.err) {}
+System.err.println("Hello");
+```
+
+This one also prints nothing. Like `System.out`, `System.err` is a `PrintStream`. 
+Even if it did throw an exception, we'd have a hard time seeing it since our I/O 
+stream for reporting error is closed! Closing `System.err` is a particularly bad 
+idea, since the stack traces from all exceptions will be hidden.
+
+Finally, what do you think this code snippet does?
+```
+var reader = new BufferedReader(new InputStreamReader(System.in));
+try (reader) {}
+String data = reader.readLine();    // IOException
+```
+
+It prints an exception at runtime. Unlike the `PrintStream` class, most `InputStream`
+implementations will thrown an exception if we try to operate on a closed I/O stream.
+
+
+### Acquiring Input with _Console_
+
+The `java.io.Console` class is specially designed to handle user interactions. After 
+all, `System.in` and `System.out` are just raw streams, whereas `Console` is a class 
+with numerous methods centered around user input.
+
+The `Console` class is a singleton because it is accessible only from a factory 
+method and only one instance of it is created by the JVM. For example, if we come 
+across code such as the following, it does not compile, since the constructors 
+are all private:
+```
+Console c = new Console();     // does not compile
+```
+
+The following snippet shows how to obtain a `Console` and use it to retrieve user input:
+```
+Console console = System.console();
+if (console != null) {
+  String userInput = console.readLine();
+  console.writer().println("You entered: " + userInput);
+} else {
+  System.err.println("Console not available");
+}
+```
+
+The `Console` object may not be available, depending on where the code is being 
+called. It it is not available, `System.console()` return `null`. It is imperative 
+that we check tor a `null` value before attempting to use a `Console` object.
+
+The program first retrieves an instance of the `Console` and verifies tht it is 
+available, outputting a message to `System.err` if it is not. If it is available, 
+the program retrieves a line of input from the user and prints the result. This 
+example is equivalent to our earlier example of reading user input with `System.in` 
+and `System.out`.
+
+
+### Obtaining Underlying I/O Streams
+
+The `Console` class includes access to two streams for reading and writing data.
+```
+public Reader reader()
+public PrintWriter writer()
+```
+
+Accessing these classes is analogous to calling `System.in` and `System.out` 
+directly, although they use character streams rather than byte streams. In this 
+manner, they are more appropriate for handling text data.
+
+
+#### Formatting Console Data
+
+In Chapter 4, we learned about the `format()` method on `String`; and in 
+Chapter 11, "Exceptions and Localization", we worked with formatting using locales. 
+Conveniently, each print stream class includes a `format()` method, which includes 
+an overloaded version that takes a `Locale` to combine both ot these:
+```
+// PrintStream
+public PrintStream format(String format, Object... args)
+public PrintStream format(Locale loc, String format, Object... args)
+
+// PrintWriter
+public PrintWriter format(String format, Object... args)
+public PrintWriter format(Locale loc, String format, Object... args)
+```
+
+For convenience Java includes `printf()` methods, which function identically to 
+the `format()` methods. The only thing we need to known about these methods is 
+that the are interchangeable with `format()`.
+
+Let's take a look at using multiple methods to print information for the user:
+```
+Console console = System.console();
+if (console == null) {
+  throw new RuntimeException("Console not available");
+} else {
+  console.writer().println("Welcome to Our Zoo");
+  console.format("It has %d animals and employs %d people", 291, 25);
+  console.writer().println();
+  console.printf("The zoo spans %5.1f acres", 128.91);
+}
+```
+
+Assuming the `Console` is available at runtime, it prints the following:
+```
+Welcome to Our Zoo!
+It has 391 animals and employs 25 people
+The zoo spans 128.9 acres
+```
+
+---
+**Using Console with Locale**
+
+Unlike print stream classes, `Console` does not include an overloaded `format()` 
+method that takes a `Locale` instance. Instead, `Console` relies on the system locale. 
+Of course, we could always use a specific `Locale` by retrieving the`Writer` object and 
+passing our own `Locale` instance, such as the following example:
+```
+Console console = System.console();
+console.writer().format(new Locale("fr", "CA"), "Hello World");
+```
+
+---
+
+#### Reading Console Data

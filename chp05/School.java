@@ -1,6 +1,5 @@
-package my.city;
+package chp05;
 
-import my.school.*;
 
 public class School {
   public static void main (String[] args) {
