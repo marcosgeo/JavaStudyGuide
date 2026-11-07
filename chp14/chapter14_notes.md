@@ -38,6 +38,9 @@ class, and interacting with attributes.
 
 [Interacting with Users](#interacting-with-users)
 
+[Working with Advanced APIs](#working-with-advanced-apis)
+
+
 
 ## Referencing Files and Directories
 
@@ -2240,3 +2243,514 @@ console.writer().format(new Locale("fr", "CA"), "Hello World");
 ---
 
 #### Reading Console Data
+
+The `Console` class includes four methods for retrieving regular text data from 
+the user.
+```
+public String readLine()
+public String readLine(String fmt, Object... args)
+
+public char[] readPassword()
+public char[] readPassword(String fmt, Object... args)
+```
+
+Like using `System.in` with a `BufferedReader`, the `Console.readline()` method 
+read input until the user presses the Enter key. The overloaded version of `readLine()` 
+displays a formatted message prompt prior to requesting input.
+
+The `readPassword()` methods are similar to the `readLine()` method, with two important 
+differences:
+- The text the user types is not echoed back and displayed on the screen as they 
+    are typing
+- The data is returned as a `char[]` instead of `String`.
+
+The first feature improves security by not showing the password on the screen if 
+someone happen to be sitting next the user. The second feature involve preventing 
+password from entering the `String` pool.
+
+
+### Reviewing Console Methods
+
+The last code sample we present aks the user a series of questions and prints result 
+based on this information using many of various methods we learned in this section.
+
+```
+Console console = System.console();
+if (console == null) {
+  throw new RuntimeException("Console not available");
+} else {
+  String name = console.readLine("Please, enter your name: ");
+  console.writer().format("Hi %s", name);
+  console.writer().println();
+
+  console.format("What is your address? ");
+  String address = console.readLine();
+
+  char[] password = console.readPassword(
+    "Enter a password between %d and %d characters: ", 5, 10);
+  char[] verify = console.readPassword("Enter the password again: ");
+  console.printf( "Passwords " + 
+      (Arrays.equals(password, verify) ? "match" : "do not match") );
+}
+```
+
+Assuming the `Console` is available, the output should resemble the following:
+```
+Please, enter your name: Max
+Hi Max
+What is your address? Spoonerville
+Enter a password between 5 and 10 characters:
+Enter the password again:
+Passwords match
+```
+
+[back to top](#chapter-14-inputoutput)
+
+
+## Working with Advanced APIs
+
+Files, paths, I/O streams: we've worked a lot in this chapter. In this final 
+section, we cover some advance features of I/O streams and NIO.2 that can be quite 
+useful in practice, and have been known to appear on the exam from time to tome.
+
+
+### Manipulating Input Streams
+
+All input stream classes include the following methods to manipulate the order 
+in which data ie read from an I/O stream:
+```
+// InputStream and Reader
+public boolean markSupported()
+public void mark(int readLimit)
+public void reset() throws IOException
+public long skip(long n) throws IOException
+```
+
+The `mark()` and `reset()` methods return an I/O stream to an earlier position. 
+Before calling either of these methods, we should call the `markSupported()` method, 
+which return `true` if `mark()` is supported. The `skip()` method is pretty simple, 
+it basically read data from the I/O stream and discards the contents.
+
+Not all input streams classes support `mark()` and `reset()`. Make sure to call 
+`markSupported()` on the I/O stream before calling these methods, or an exception 
+will be thrown at runtime.
+
+
+### Marking Data
+
+Assume that we have an `InputStream` instance whose next values are LION. Consider 
+the following code snippet:
+```
+public void readData(InputStream is) throws IOException {
+  System.out.print( (char)is.read() );       // L
+  if (is.markSupported()) {
+    is.mark(100);                           // marks up to 100 bytes
+    System.out.print( (char)is.read() );    // I
+    System.out.print( (char)is.read() );    // O
+    is.reset();                             // resets stream to position before I
+  }
+  System.out.print( (char)is.read() );      // I
+  System.out.print( (char)is.read() );      // O
+  System.out.print( (char)is.read() );      // N 
+}
+```
+
+The code snippet will output LIOION if `mark()` is supported and LION otherwise. 
+It's a good practice to organize ou `read()` operation so that the I/O stream ends 
+up at the same position regardless of whether `mark()` is supported.
+
+What about the value of 100 bytes that we passed to the `mark()` method? This value 
+is called the `readLimit`. It instructs the I/O stream that we expect to call `reset()` 
+after at most 100 bytes. If out program calls `reset()  after reading more than 100 
+bytes from calling `mark(100)`, it may throw an exception, depending on the I/O 
+stream class.
+
+In actuality, `mark()` and `reset()` are not putting the data back into the I/O stream 
+but are storing the data in a temporary buffer in memory to be read again. Therefore, we 
+should no call the `mark()`operation with to large values, as this could take up a lot  
+of memory.
+
+### Skipping Data
+
+Assume that we have an `InputStream` instance whose next values area TIGERS. 
+Consider the following code snippet:
+```
+System.out.print( (char)is.read() );     // T
+is.skip(2);                              // skips I and G
+is.read();                               // reads E but doesn't output it
+System.out.print( (char)is.read() );     // R
+System.out.print( (char)is.read() );     // S
+```
+
+This code prints RST at runtime. We skipped two characters, I and G. We also read 
+E but didn't use it anywhere, so it behaved like calling `skip(1)`.
+
+The return parameter of `skip()` tels us how many values were skipped. For example, if 
+we are near the end of the I/O stream and call `skip(1000)`, the return value might be 
+20, indicating that the end ot the I/O stream was reached after 20 values were skipped. 
+Using the return value of `skip()` is important if we need to keep track of where we 
+are in an I/O stream and how many bytes have been processed.
+
+
+### Reviewing Manipulation APIs
+
+Table 14.11 reviews these APIs related to manipulating I/O input streams. While 
+we many not have used these in practice, we need to know that they exists.
+
+**Table 14.11: Common I/O stream method**
+
+![common i-o methods](io_common_common_methods.png)
+
+
+### Discovering File Attributes
+
+We begin out discussion by presenting the basic methods for reading tile attributes. 
+These methods are usable within any file system, although they may have limited meaning 
+in some file systems.
+
+
+#### Checking for Symbolic Links
+
+Earlier, we saw that the `Files` class has methods called `isDirectory()` and 
+`isRegularFile()`, which are similar to the `isDirectory()` and `isFile()` methods 
+on `File`. While the `File` object can't tell us if a reference is a symbolic link, 
+the `isSymbolicLink()` method on `Files` can.
+
+It is possible for `isDirectory()` or `isRegularFile()` to return `true` for a symbolic 
+link, as long as the link resolves to a directory or regular file, respectively. Let's 
+take a look at some sample code:
+```
+System.out.print(Files.isDirectory(Paths.get("/canine/fur.jpg")));
+System.out.print(Files.isSymbolicLink(Paths.get("/canine/coyote")));
+System.out.print(Files.isRegularFile(Paths.get("/canine/types.txt")));
+```
+
+The first example prints `true` if `fur.jpg` is a directory or a symbolic link to 
+a directory and `false` otherwise. The second example prints `true` if `/canine/coyote` 
+is a symbolic link, regardless of whether the file or directory it points to exists. 
+The third example prints `true` if `types.txt` points to a regular file or symbolic 
+link that points to a regular file.
+
+
+#### Checking File Accessibility
+
+In many file systems, it is possible to set a boolean attribute to a file tht marks 
+it hidden, readable, or executable. The `Files` class includes methods that expose this 
+information: `isHidden()`, `isReadable()`, `isWriteable()`, and `isExecutable()`.
+
+A hidden file can't normally be viewed when listing the contends of a directory. 
+The readable, writeable, and executable flags are important in file systems where 
+the filename can be viewed, but the user may not have permission to open the file's 
+contents, modify the file, or run the file as a program, respectively.
+
+Here we present an example of each method:
+```
+System.out.println(Files.isHidden(Paths.get("/walrus.txt")));
+System.out.println(Files.isReadable(Paths.get("/seal/baby.png")));
+System.uot.println(Files.isWriteable(Paths.get("/dolphin.txt")));
+System.out.println(Files.isExecutable(Paths.get("whale.png")));
+``` 
+
+If the `walrus.txt` file exists and is hidden within the file system, the first 
+example prints `true`. The second example prints `true` it the `baby.png` file exists 
+and its contents are readable. The third example prints `true` if the `dolphin.txt` 
+file can be modified. Finally, the last example prints `true` if the file can be executed 
+within the operating system. Not that the file extension does not necessarily determine 
+whether a file is executable. For example, an image file that ends in `.png` could be 
+marked executable in sole file systems.
+
+With the exception of the `isHidden()` methods, these methods do not declare any checked 
+exceptions and return `false` if the file does not exists.
+
+
+### Improving Attribute Access
+
+Up until now, we have been accessing individual file attributes with multiple method 
+calls. While this is functionally correct, there is often a cost each time one of these 
+methods is called. Put simply, it is far more efficient to ask the file system for all 
+of the attributes at once rather than performing multiple round trips to the file system. 
+Furthermore, some attributes are file system-specific and cannot be easily generalized 
+for all file systems.
+
+NIO.2 address both of these concerns by allowing us to construct views for various 
+file systems with a single method call. A _view_ is a group of related attributes for 
+a particular file system type. Thats not to say that the earlier attribute methods that 
+we just finished discussing do no have their uses. If we need to read only one attribute 
+of a file or directory, request a view is unnecessary.
+
+
+#### Understanding Attribute and View Types
+
+NIO.2 includes two methods for working with attributes in a single method call: 
+a read-only attributes method and a updatable view method. For each method, we need to 
+provide a file system type object, which tells the NIO.2 method which type of view we 
+are requesting. By updatable view, we mean that we can both read and write attributes 
+with the same object.
+
+Table 14.12 lists the commonly used attributes and view types.
+
+**Table 14.13: The attributes and view types**
+![attributes and view types](attributes_and_view_types.png)
+
+
+#### Retrieving Attributes
+
+The `Files` class includes the following method to tread attributes of a class in 
+a read-only capacity:
+```
+public static <A extends BasicFileAttributes> A readAttributes(
+  Path, path,
+  Class<A> type,
+  LinkOption... options
+) throws IOException
+```
+
+Applying it requires specifying the `Path` and `BasicFileAttribute.class` parameters.
+```
+var path = Paths.get("/turtles/sea.txt");
+BasicFileAttributes data = Files.readAttribute(path, BasicFileAttribute.class);
+
+System.out.println("Is a directory? " + data.isDirectory());
+System.out.println("Is a regular file? " + dat.isRegularFile());
+System.out.println("Is a symbolic link? " + data.isSymbolicLink());
+System.out.println("Size (in bytes): " + data.size());
+System.out.println("Last modified: " + data.lastModifiedTime());
+```
+
+The `BasicFileAttributes` class includes many values with the same name as the 
+attribute methods in the `Files` class. The advantage of using this method, though, 
+is that all of the attributes are retrieved at once for some operating systems.
+
+
+#### Modifying Attributes
+
+The following `Files` method returns an updatable view:
+```
+public static <V extends FileAttributeView> V getFileAttributeView(
+  Path path,
+  Class<V> type,
+  LinkOption... options
+)
+```
+
+We can use the updatable view to increment a file's last modified date/time value 
+by 10.000 milliseconds, or 10 seconds.
+```
+// Read file attributes
+var path = Paths.get("/turtles/sea.txt");
+BasicFileAttributeView view = 
+    Files.getFileAttributeView(path, BasicFileAttributesView.class);
+BasicFileAttributes attributes = view.readAttributes();
+
+// Modify file last modified time
+FileTime lastModifiedTime = 
+    FileTime.fromMillis(attributes.lastModifiedTime().toMillis() + 10_000);
+view.setTimes(lastModifiedTime, null, null);
+```
+
+After the updatable view is retrieved, we need to call `readAttributes()` on the 
+view to obtain the file metadata. From there, we create a new `FileTime` value and 
+set it using the `setTimes()` method.
+```
+// BasicFileAttributeView instance method
+public void setTimes(
+  FileTime lastModifiedTime, 
+  FileTime lastAccessTime, 
+  FileTime createdTime
+)
+```
+
+This method allows us to pass `null` for any date/time value that we do not want 
+to modify. In our sample code, only the last modified date/time is changed.
+
+Not all file attributes can be modified with a view. For example, we cannot set 
+a property that changes a file into a directory. Likewise, we cannot change the 
+size of the object without modifying its contents.
+
+
+### Traversing a Directory Tree
+
+While the `Files.list()` method is useful, it traverses the contents of only a single 
+directory. What it we want to visit all fof the paths within a directory tree? Before 
+we proceed, we need to review some basic concept about file systems. Remember that a 
+directory is organized in a hierarchical manner. For example, a directory can contain 
+files and other directories, which can in turn contain other files and directories. 
+Every record in a file system has exactly on parent, with the exception of the root 
+directory, which sits atop everything.
+
+A file system is commonly visualized as a tree with a single root node and many branches 
+and leaves. In this model, a directory is a branch or internal node, and a file is leaf 
+node.
+
+A common task in a file system is to iterate over the descendants of a path, either 
+recording information about them or, more commonly, filtering them for a specific set 
+of files. For example, we may want to search a folder and print a list of all of the 
+`.java` files. Furthermore, file systems store file records in a hierarchical manner. 
+Generally speaking, if we want to search for a file, we have to start with a parent 
+directory, read its child elements, then read their children, and so on.
+
+_Traversing a directory_, also referred to as walking a directory tree, is the process 
+by which we start with a parent directory and iterate over all of its descendants until 
+some condition is met or there are no more elements over which to iterate. For example, 
+if we're searching for a single file, we can end the search when the file is found or 
+we've  checked all files and come up empty. The starting path is usually a specific 
+directory; after all, it would be time-consuming to search the entire file system on 
+every request.
+
+---
+**Don't use _DirectoryStream_ and _FileVisitor_**
+
+While browsing the NIO.2 Javados, we will come across methods that use `DirectoryStream` 
+and `FileVisitor` classes to traverse a directory. These methods predate the existence 
+of the Stream API and were even required knowledge for older Java certifications exams.
+
+However, the  newer Stream API based methods are superior and accomplish the same thing, 
+often with much less code.
+
+---
+
+#### Selecting a Search Strategy
+
+Two common strategies are associated with walking a directory tree: a _deep-first_ 
+and a _breadth-first_ search. A _depth-first search_ traverses the structure from the 
+root to an arbitrary leaf and then navigates back up toward the root, traversing fully 
+any paths it skipped along the way. The _search depth_ is the distance from the root 
+to current node. To prevent endless searching, Java includes a search depth that is to 
+limit how many levels (or hops) from the root the search is allowed to go.
+
+Alternatively, a _breadth-first search_ starts at the root and process all elements 
+of each particular depth before proceeding to the next depth level. The results are 
+ordered by depth, with all nodes at depth 1 read before all nodes at depth 2, and so 
+on. While a breadth-first search tends to be balanced and predictable, it also requires 
+more memory since a list of visited node must be maintained.
+
+Commonly, we don't have to understand the details of each search strategy that Java 
+employs; we just need to be aware that the NIO.2 Stream API methods use depth-first 
+searching with a depth limit, which can be optionally changed.
+
+
+#### Walking a Directory
+
+That's enough background information; let's get to more Stream API methods. The 
+`Files` class includes two methods for walking the directory tree using a depth-
+first search.
+```
+public static Stream<Path> walk(Path start, FileVisitOption... options)
+    throws IOException
+
+public static Stream<Path> walk(Path start, int maxDepth, FileVisitOption... options)
+    throws IOException
+```
+
+Like our other stream methods, `walk()` uses lazy evaluation and evaluates a `Path` 
+only as it gets to it. This means that even if the directory tree includes hundreds 
+or thousands of files, the memory required to process a directory tre is low. The first 
+`walk()` method relies on a default maximum depth of `Integer.MAX_VALUE`, while the 
+overloaded version allows the user to set a maximum depth. this is useful in cases 
+where the file system might be large and we know the information we are looking 
+for is near the root.
+
+Rather than just printing the contends of a directory tree, we can again do something 
+more interesting. The following `getPathSize()` methods walks a directory tree and 
+returns the total size of all the files in the directory:
+```
+private long getSize(Path p) {
+  try {
+    return Files.size(p);
+  } catch (IOException e) {
+    throw new UncheckedIOException(e);
+  }
+}
+
+public long getPathSize(Path source) throws IOException {
+  try (vars s = Files.walk(source)) {
+    return s.parallel()
+        .filter( p -> !Files.isDirectory(p))
+        .mapToLong(this::getSize)
+        .sum();
+  }
+}
+```
+
+The `getSize()` helper method is needed because `Files.size()` declares `IOException`, 
+and we'd rather not put a try/catch block inside a lambda expression. Instead, we wrap 
+it in the unchecked exception class `UncheckedIOException`. We can print the data using 
+the `format()` method:
+```
+var size = getPathSize(Path.of("/fox/data"));
+System.out.format("Total Size: %.2f megabytes", (size / 1_000_000) * 1.0);
+```
+
+Depending on the directory we run this on, it will print something like this:
+```
+Total Size: 15.30 megabytes
+```
+
+
+#### Applying a Depth Limit
+
+Let's say our directory tree is quite deep, so we apply a depth limit by changing 
+one line of code in our `getPathSize()` method.
+```
+try (var s = Files.walk(source, 5)) {
+  // omitted
+}
+```
+
+This new version checks for files only within 5 steps of the starting node. A depth 
+value of 0 indicates the current directory path itself. Since the method calculates 
+values on on files, we'd have to set a depth limit of at least 1 to get a nonzero 
+result when this method is applied to a directory tree.
+
+
+#### Avoiding Circular Paths
+
+Many of our earlier NIO.2 methods traverse symbolic links by default, with a 
+`NOFOLLOW_LINKS` used to disable this behavior. The `walk()` method is different in 
+that id does _not_ follow symbolic links by default and requires the `FOLLOW_LINKS` 
+option to be enabled. We can alter our `getPathSize()` method to enable following 
+symbolic links by adding the `FileVisitOption`.
+```
+try (var s = Files.walk(source, FileVisitOption.FOLLOW_LINKS)) {
+  // omitted
+}
+```
+When traversing a directory tree, our program need to be careful of symbolic links, 
+if enabled. For example, if our process comes across a symbolic link that points to 
+the root directory of the file system, every file in the system will be searched!
+
+Worse yet, a symbolic link could lead to a cycle in which a path is visited repeatedly. 
+A _cycle_ is an infinite circular dependency in which an entry in a directory tree 
+points to one of its ancestor directories. Let's say we had a directory tree as shown 
+in Figure 14.7 with the symbolic link `/birds/robin/allBirds` that points to `/birds`.
+
+![file system with cycle](file_system_with_cycle.png)
+
+**Figure 14.7: File system with cycle**
+
+What happens if we try to traverse this tree and follow all symbolic links, starting 
+with `/birds/robin`? Table 14.13 shows the paths visited after walking a depth of 3. 
+For simplicity, we walk the tree in a breadth-first ordering, _although a cycle occurs_ 
+_regardless of the search strategy used_.
+
+**Table 14.13: Walking a directory with a cycle using breadth-first search**
+
+![walking directory with cycle breadth-first](walking_directory_with_cycle_breadth_first.png)
+
+
+After  walking  a  distance  of 1  from  the start,  we hit the  symbolic link 
+`/birds/robin/allBirds` and go back to  the top of the directory tree `/birds`. 
+That's okay because we haven't visited `/birds` yet, so there's non cycle yet!
+
+Unfortunately, at  depth 2,  we  encounter a  cycle.  We've already visited the 
+`/birds/robin` directory on our first step, and we're encountering it again. If 
+the process continues, we'll be doomed to visit the directory over and over again.
+
+We have to be aware when the `FOLLOW_LINKS` options is used, the `walk()` method 
+will track all of the paths it has visited, throwing a `FileSystemLoopException`
+if a path is visited twice.
+
+
+### Searching a Directory
+
+In the previous example, we applied a filter to the `Stream<Path>`
