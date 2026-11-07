@@ -2753,4 +2753,164 @@ if a path is visited twice.
 
 ### Searching a Directory
 
-In the previous example, we applied a filter to the `Stream<Path>`
+In the previous example, we applied a filter to the `Stream<Path>` object to 
+filter the results, although there is a more convenient method.
+```
+public static Stream<Path> find(
+  Path start, 
+  int maxDepth,
+  BiPredicate<Path, BasicAttributes> matcher,
+  FileVisitOption... options
+) throws IOException
+```
+
+The `find()` methods behaves in a similar manner as the `walk()` method, except that 
+it takes a `BiPredicate` to filter the data. It also requires a depth limit to be set. 
+Like `walk()`, `find()`, also supports the `FOLLOW_LINK` option.
+
+The two parameters of the `BiPredicate` are a `Path` object and a `BasicFileAttributes` 
+object, which we saw earlier in the chapter. In this manner, Java automatically retrieves 
+the basic file information for us, allowing us to write complex lambda expressions that 
+have direct access to this object. We illustrate this with the following example:
+```
+Path path = Paths.get("/bigcats");
+long minSize = 1_000;
+try (var s = Files.find(
+    path, 
+    10, 
+    (p, a) -> a.isRegularFile() && p.toString().endsWith(".java") && a.size() > minSize 
+  )
+) {
+  s.forEach(System.out::println);
+}
+```
+
+This example searches a directory tree and prints all `.java` files with a size of 
+at least 1,000 bytes, using a depth limit of 10. While we could have accomplished this 
+using the `walk()` method along with a call to `readAttributes()`, this implementation 
+is a lot shorter and more convenient than those would have been. We also don't have to 
+worry about any methods within the lambda expression declaring a checked exception, 
+as we saw in the `getPathSize()` example.
+
+
+## Reviewing of Key APIs
+
+The key APIs that we need to know are listed in table 14.14. We know that some of 
+the classes look similar. We need to know this table well for the exam.
+
+**Table 14.14: Key APIs**
+
+![key apis](key_apis.png)
+
+
+Additionally, Figure 14.8 shows all of the I/O stream classes that we need to 
+be familiar, with the exception of the filter streams. `FilterInputStream` and 
+`FilterOutputStream` are high-level superclasses that filter or transform data. 
+They are rarely used directly.
+
+![diagram of i-o stream classes](io_stream_classes_diagram.png)
+
+
+The `InputStreamReader` and `OutputStreamWriter` are incredibly convenient 
+and are also unique in that they are the only I/O stream class to have both 
+InputStream/OutputStream and Reader/Writer in their name.
+
+[back to top](#chapter-14-inputoutput)
+
+
+## Summary
+
+This chapter is all about reading and writing data. We started by showing how to 
+create `File` from I/O and `Path` from NIO.2. We then covered the functionality that 
+works with both I/O and NIO.2 before getting into NIO.2-specific APIs. We should be 
+familiar with how to combine or resolve `Path` objects with other `Path` objects. 
+Additionally, NIO.2 includes Stream API methods that can be used to process files and 
+directories. We discussed methods for listings a directory, walking a directory tree, 
+searching a directory tree, and reading the lines of a file.
+
+We spent time reviewing various methods available in the `Files` helper class. As 
+discussed, the name of the function often tells us exactly what it does. We explained 
+that most of theses methods are capable of throwing an IOException, and many take optional 
+varargs enum values.
+
+We then introduced I/O streams and explained how they are used to read or write large 
+quantities of data. While there are a lot of I/O streams, they differ on some key points:
+* Byte vs. character streams
+* Input vs. output streams
+* Low-level vs. high-level streams
+
+Often, the name of the I/O stream can tell us a lot about what it does. We visited 
+many of the I/O stream classes that we need to know in increasing order of complexity. 
+A common practice is to start with a low-level resource or file stream and wrap it in a 
+buffered I/O stream to improve performance. We can also apply a high-level stream to 
+manipulate the data, such as an object or print stream. We described what it means to 
+be serializable in Java, and we showed how to use the object stream classes to persist 
+objects directly ot and from disk.
+
+We explained how to read input data from the user using both the system stream objects 
+and the `Console` class. The `Console` class has many useful features, such as built-in 
+support for passwords and formatting.
+
+We also discussed how NIO.2 provides methods for reading and writing file metadata. 
+NIO.2 includes two methods for retrieving all of the file system attributes for a path 
+in a single call without numerous round trips to the operating system. One method requires 
+a read-only attribute type, while the second method requires an updatable view type. It 
+also allows NIO.2 to support operating system-specific file attributes.
+
+
+### Understanding files and directories
+
+Files are records that store data within a persistent storage device, such as a hard 
+disk drive, that is available after the application has finished executing. Files are 
+organized within a file system in directories, which in turn may contain other directories. 
+the root directory is the topmost directory in a file system.
+
+
+### Be able to use _File_ and _Path_
+
+An I/O File instance is created by calling the constructor. It contains a number of 
+instance methods for creating and manipulating a file or directory. An NIO.2 Path 
+instance is an immutable object that is commonly created from the factory method 
+`Paths.get()` or `Paths.of()`. It can also be created from `FileSystem`, `java.net.URI`, 
+or `java.io.File` instances. The Path interface includes many instance methods for 
+reading and manipulating the abstract path value.
+
+
+### Distinguish between types of I/O streams
+
+I/O streams are categorized by byte/character, input/output, and low-level/high-level. 
+Byte streams operate on binary data and have names that end with Stream, while character 
+streams operate on text data and have names that end in Reader or Writer. The InputStream 
+and Reader classes are the topmost abstract classes that receive data, while the 
+OutputStream and Writer classes are the topmost abstract classes that send data. A low-
+level stream is one that operates directly on the underlying resource, such as a file or 
+network connection. A high-level stream operates on a low-level or other high-level 
+stream to filter data, convert data, or improve performance.
+
+
+### Understanding how to use Java serialization
+
+A class is considered serializable if it implements the `java.io.Serializable` 
+interface and contains instance members that are either serializable or marked transient. 
+All Java primitives and the String class are serializable. The `ObjectINputStream` and 
+`ObjectOutputStream` classes can be used to read and write a Serializable object from 
+and to an I/O stream, respectively.
+
+
+### Be able to interact with the user
+
+Be able to interact with the user using the system streams (System.out, System.in and 
+System.err) as well as the Console class. The Console class includes special methods for 
+formatting data and retrieving complex input such as passwords.
+
+
+### Manage file attributes
+
+The NIO.2 Files class includes many methods for reading single file attributes, such 
+as its size or whether it is  directory, a symbolic link, hidden, etc. NIO.2 also supports 
+reading all of the attributes in a single call. All attribute type is used to support 
+operating system-specific views. Finally, NIO.2 supports updatable views for modifying 
+selected attributes.
+
+
+[back to top](#chapter-14-inputoutput)
