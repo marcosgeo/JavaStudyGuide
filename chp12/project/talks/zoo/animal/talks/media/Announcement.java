@@ -1,4 +1,4 @@
-package zoo.animal.talks.media;
+package chp12.project.talks.zoo.animal.talks.media;
 
 public class Announcement {
   public static void main(String... args) {

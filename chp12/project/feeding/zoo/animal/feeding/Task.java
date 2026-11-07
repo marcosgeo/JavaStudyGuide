@@ -1,4 +1,4 @@
-package zoo.animal.feeding;
+package chp12.project.feeding.zoo.animal.feeding;
 
 public class Task {
   public static void main(String... args) {
