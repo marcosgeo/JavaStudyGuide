@@ -1,7 +1,8 @@
-package zoo.tours.reservations;
+package chp12.service.reservation.zoo.tours.reservations;
 
 import java.util.*;
-import zoo.tours.api.*;
+
+import chp12.service.api.zoo.tours.api.*;
 
 public class TourFinder {
   public static Tour findSingleTour() {
