@@ -7,6 +7,8 @@ import java.nio.file.Path;
 
 public class PathSizeApp {
 
+  var text = new InputRea
+
   private long getSize(Path path) {
     try {
       return Files.size(path);
