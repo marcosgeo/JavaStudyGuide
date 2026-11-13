@@ -18,6 +18,8 @@ queries, process the results, and work with transactions.
 
 [Connecting to a Database](#connecting-to-a-database)
 
+[Working with PreparedStatement](#working-with-preparedstatement)
+
 
 
 ## Introducing Relational Databases and SQL
@@ -232,3 +234,296 @@ location.
 
 
 ### Getting a Database _Connection_
+
+There are two main ways to get a `Connection`: `DriverManager` and `DataSource`. 
+`DriverManager` is the on covered on the exam, but is not used in professional projects. 
+A `DataSource` has more features than `DriverManager`. For example, it can pool connections 
+or store the database connection information outside the application.
+
+The `DriverManager` class is in the JDK, as it is an API that comes with Java. It uses 
+the factory pattern, which means that you call a static method to get a `Connection` rather 
+than calling a constructor. As we saw in Chapter 11, "Exceptions and Localization", the 
+factory pattern means that e can get any implementation of the interface when calling the 
+method. The good news i that the method has an easy-to-remember nat: `getConnection()`. To 
+get a `Connection` from hte HyperSQL database, we write the following:
+ 
+ ```
+import java.sql.*;
+
+public class TestConnect {
+  public static void main(String[] args) throws SQLException {
+    try (
+      Connection conn = DriverManager.getConnection("jdbc:hsqldb:file:zoo")
+    ) {
+      System.out.println(conn);
+    }
+  }
+}
+ ```
+
+ As in Chapter 11, we use a try-with-resources statement to ensure that database 
+ resources are closed. We cover closing database resources in more detail later in the 
+ chapter. We also throw the checked `SQLException`, which means something went wrong. 
+ Fro example, we might have forgotten the set the location of the database driver in 
+ our classpath.
+
+ Assuming the program runs successfully, it print something like this:
+ ```
+org.hsqldb.jdbc.JDBCConnection@3dfc5fb8
+ ```
+
+ The details to the output aren't important. Just notice that the class is not 
+ `Connection`. It is a vendor implementation of `Connection`.
+
+ There is also a signature that takes a username and password.
+ ```
+import java.sql.*;
+
+public class TestExternal {
+  public static void main(String[] args) throws SQLException {
+    try (
+      Connection conn = DriverManager.getConnection(
+        "jdbc:postgresql://localhost:5432/ocp-book", "username", "password")
+    ) {
+      System.out.println(conn);
+    }
+  }
+}
+ ```
+
+ Notice tha three parameters that are passed to `getConnection()`. The first is 
+ the JDBC URL that we learned about in the previous section. The second is the 
+ username for accessing the database, and the third is the password for this user. 
+ The username and the password should not have be hardcoded in the code, they 
+ have to be stored in other places, in some kind of configuration or environment 
+ variable.
+
+ When we run this with the Postgres driver JAR, it would print something like this:
+ ```
+org.postgresql.jdbc4.Jdbc4Connection@edd1f14
+```
+
+Again, notice that it is a driver-specific implementation class. We can tell from 
+the package name. Since the package is `org.postgresql.jdbc4`, it is part of the 
+PostgreSQL driver.
+
+Unless the exam specifies a command line, we can assume that the correct JDBC 
+driver JAR is in the classpath. The exam creators explicitly ask about the driver 
+JAR if the want someone to think about it.
+The nice thing about the factory pattern is that it takes care of the logic of 
+creating a class for us. We don't need to know the name of the class that implements 
+`Connection`, and we don't need to know how it is created. Of course we are a little 
+curious about how this is done.
+
+`DriverManager` looks through any drivers it can find to see whether they can handle 
+the JDBC URL. If so, it creates a `Connection` using that driver. If not, it gives up 
+and throws a `SQLException`.
+
+We might see `Class.forName()` in some code. It was required with order drivers (
+that were designed for oder version of JDBC) before getting a `Connection`.
+
+[back to top](#chapter-15-jdbc)
+
+
+## Working with _PreparedStatement_
+
+In Java, we have a choice of working with a `Statement`, `PreparedStatement`, or 
+`CallableStatement`. The latter two are sub-interfaces fo `Statement`, as show in 
+Figure 14.4.
+
+![types of statements](img/statements_types.png)
+
+**Figure 15.4: Types of statements**
+
+Later in the chapter, we will learn about using `CallableStatement` for queries 
+that are inside the database. In this section, we look at `PreparedStatement`.
+
+The `Statement` is  the  interface  that `PreparedStatement`  and  `CallableStatement` 
+extend, both as similar to each other, except that a `PreparedStatement` takes parameters, 
+while a `Statement` does not. A `Statement` just executes whatever SQL query we give it.
+
+While it is possible to run SQL directly with `Statement`, we shouldn't. `PreparedStatement` 
+is fora superior for the following reasons:
+-**Performance**: in most programs, we run similar queries multiple times. When we use 
+  `PreparedStatement`, the database software often devises a plan to run the query well 
+  and remembers it.
+-**Security**: We are protected against an attack called SQL injection when using a 
+  `PreparedStatement` correctly.
+-**Readability**: It's nice not to have to deal with string concatenation in building 
+  a query with lots of parameters.
+-**Future use**: Even if our query is being run only once or doesn't have any parameters, 
+  we should still use a `PreparedStatement`. That way, future editors of the code won't 
+  add a variable and have to remember to change to `PreparedStatement` then.
+
+
+Using the `Statement` interface directly is not in scope for the JDBC exam, so we do not 
+cover it in this book. In the following sections, we cover obtaining a `PreparedStatement`, 
+executing one, working with parameters, and running multiple updates.
+
+
+### Obtaining a _PreparedStatement_
+
+To run SQL, we need to tell a `PreparedStatement` about it, getting on from a `Connection` 
+is easy:
+```
+try (
+  PreparedStatement ps = conn.prepareStatement("SELECT * FROM exhibits")
+) {
+  // work with ps
+}
+```
+
+An instance of a `PreparedStatement` represents a SQL statement that we want to 
+run using the `Connection`. It dos not execute the query yet. We get to that shortly.
+
+
+Passing a SQL statement when creating the object is mandatory. We might see a trick 
+on the exam.
+```
+try (
+  var ps = conn.prepareStatement()     // does not compile
+)
+```
+
+The previous example does not compile because SQL is not supplied at the time a 
+`PreparedStatement` is required. We also used `var` in this example. We write JDBC 
+code both using `var` and the actual class names to get the object we need.
+
+There are overloaded signatures that allow us to specify a `ResultSet` type and 
+concurrency mode. On the exam, we only need to know how to use the default options, 
+which process the result in order.
+
+
+### Executing a _PreparedStatement_
+
+Now that we have a `PreparedStatement`, we can run the SQL statement. The method for 
+running SQL varies depending on what kind of SQL statement it is. Remembering that we 
+aren't expected to be able to read SQL, but we need to know what the first keyword 
+means.
+
+
+#### Modifying Data with _executeUpdate()_
+
+Let's start with statement that change the data in a table. Those are SQL statements 
+that begin with `DELETE`, `INSERT`, or `UPDATE`. They typically use a method called 
+`executeUpdate()`. The name is a little tricky because the SQL UPDATE statement is 
+not the only statement that uses this method. The name for the method came from the 
+fact that the three SQL statements that it executes _updates the table_.
+
+The method takes the SQL statement to run as parameter. It return the number of rows 
+that were inserted, deleted, or changed. Here's an example of all three update types:
+```
+10: var insertSql = "INSERT INTO exhibits VALUES(10, 'Deer', 3);"
+11: var updateSql = "UPDATE exhibits SET name = '' " +
+12:     "WHERE name = 'None'";
+13: var deleteSql = "DELETE FROM exhibits WHERE id = 10";
+14: 
+15: try ( var ps = conn.prepareStatement(insertSql)) {
+16:   int result = ps.executeUpdate();
+17:   System.out.println(result);        // 1
+18: }
+19: 
+20: try ( var ps = conn.prepareStatement(updateSql)) {
+21:   int result = ps.executeUpdate();
+22:   System.out.println(result);        // 0    
+23: }
+24: 
+25: try ( var ps = conn.prepareStatement(deleteSql)) {
+26:   int result = ps.executeUpdate();
+27:   System.out.println(result);        // 1
+28: }
+```
+
+Notice how each distinct SQL statement need its own `prepareStatement()` call. Line 
+15 creates the insert statement, and line 16 runs that statement to insert on row. The 
+`result` is 1 because one row was affected. Line 20 created the update statement, and 
+line 21 checks the whole table for matching records to update. Since no records match, 
+the `result` is 0. Line 25 creates the delete statement, and line 26 deletes the row 
+created on line 16. Again, one row is affected, so the `result` is 1.
+
+
+#### Reading data with _executeQuery()_
+
+Next, let's look at a SQL statement that begins with SELECT. This time, we use the 
+`executeQuery()` method.
+```
+30: var sql = "SELECT * FROM exhibits";
+31: try ( 
+32:   var ps = conn.prepareStatement(sql);
+33:   ResultSet re = ps.ExecuteQuery()
+34: ) {
+35:   // work with rs
+36: }
+```
+
+On line 32, we create a `PreparedStatement` for our SELECT query. On line 33, we 
+run it. Since we are running a query to get a result, the return type is `ResultSet`. 
+In the next section, we will see how to process the `ResultSet`.
+
+
+#### Processing data with _execute()_
+
+There is a third method called `execute()` that can run either a query or an update. 
+It returns a boolean so that we know whether there is a `ResultSet`. That way, we can 
+call the proper method to get more detail. The pattern looks like this:
+```
+boolean isResultSet = ps.execute();
+if (isResultSet) {
+  try (ResultSet rs = ps.getResultSet()) {
+    System.out.println("ran a query");
+  }
+} else {
+  int result = ps.getUpdateCount();
+  System.out.println("ran an update");
+}
+```
+
+If the `PreparedStatement` refers to `sql` that is a SELECT, the `boolean` is `true`, 
+and we can get the `ResultSet`. It if is not a SELECT, we can get the number of rows 
+updated.
+
+
+#### Using the Correct Method
+
+What happens if we use the wrong method for a SQL statement? Let's take a look:
+```
+var sql = "SELECT * FROM names";
+try ( var ps = conn.prepareStatement() ) {
+  var result = ps.executeUpdate();
+}
+```
+
+This throws a `SQLException` similar to the following:
+```
+Exception in thread "main" java.sql.SQLException:
+  statement does not generate a row count
+```
+
+We can't get a compiler error since the SQL is a `String`. We can get an exception, 
+though, and we do. We also get a `SQLException` when using `executeQuery()` with SQL 
+that changes data in table.
+```
+Exception in thread "main" java.sql.SQLException:
+  statement does not generate result set
+```
+
+Again, we get an exception because the driver can't translate the query into the 
+expected return type.
+
+
+### Reviewing _PrepareStatement_ Methods
+
+To review, Table 15.3 shows which SQL statements can be run by each of the three 
+key methods on `PreparedStatement`. Table 15.4 shows what is returned by each method.
+
+**Table 15.3: SQL runnable by the execute methods**
+
+![SQL runnables execute method](img/ps_execute_method.png)
+
+
+**Table 15.4: Return types of execute methods**
+
+![return types execute methods](img/ps_execute_method_return_types.png)
+
+
+### Working with Parameters
