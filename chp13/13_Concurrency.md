@@ -57,7 +57,7 @@ for an overview of thread and their shared environment within a process.
 This figure shows a single process with three threads. It also shows how they are 
 mapped to an arbitrary number of _n CPUs_ available within the system.
 
-![process model](process_model.png)
+![process model](img/process_model.png)
 
 **Figure 13.1: Process model**
 
@@ -260,7 +260,7 @@ the program will wait for them to finish.
 After a thread has been created, it is in one of six states, shown in Figure 13.2. 
 We can query a thread's state by calling `getState()` on the thread object.
 
-![thread states](thread_states.png)
+![thread states](img/thread_states.png)
 
 **Figure 13.2: Thread states**
 
@@ -470,7 +470,7 @@ shutting down, a `RejectedExecutionException` will be thrown. Once all active ta
 been completed, `isShutdown()` and `isTerminated()` will both return `true`. Figure 13.3 
 shows the life cycle of an `ExecutorService` object.
 
-![ExecutorService life cycle](executor_life_cycle.png)
+![ExecutorService life cycle](img/executor_life_cycle.png)
 
 **Figure 13.3: ExecutorService life cycle**
 
@@ -501,7 +501,7 @@ after the task has been completed.
 Table 13.1 show the five methods including `execute()` and two `submit()` methods, 
 that we need to known most. We will discuss `Future` and `Callable` in the next section.
 
-![executor service methods](executor_methods.png)
+![executor service methods](img/executor_methods.png)
 
 **Table 13.1: ExecutorService methods**
 
@@ -541,7 +541,7 @@ of a task.
 
 **Table 13.2: Future methods**
 
-![future method](future_methods.png)
+![future method](img/future_methods.png)
 
 The following is an updated version of out earlier polling example `CheckResults` class, 
 which uses a `Future` instance to wait for the results.
@@ -584,7 +584,7 @@ values since numerous methods in the Concurrency API use this enum.
 
 **Table 13.3: TimeUnit values**
 
-![time unit values](timeunit_values.png)
+![time unit values](img/timeunit_values.png)
 
 
 ### Introducing Callable
@@ -682,7 +682,7 @@ methods return a `ScheduledFuture` object.
 
 **Table 13.4: ScheduledExecutorService methods**
 
-![scheduled executor service methods](scheduled_executor_service_methods.png)
+![scheduled executor service methods](img/scheduled_executor_service_methods.png)
 
 
 In practice, these methods are among the most convenient in the Concurrency API, 
@@ -767,7 +767,7 @@ available to perform a set of arbitrary tasks. Table 13.5 show them.
 
 **Table 13.5: Executors factory methods**
 
-![executors factory methods](executors_factory_methods.png)
+![executors factory methods](img/executors_factory_methods.png)
 
 As shown in Table 13.5, these methods return the same instance types, `ExecutorService` 
 and `ScheduledExecutorService`, that we used earlier in this chapter. In other words, all 
@@ -839,7 +839,7 @@ both assign the same new value, with one thread overwriting the results of the
 other. Figure 13.4 demonstrates this problem with two threads, assuming that 
 `sheepCount` has a starting value of 1.
 
-![lack thread synchronization](lack_thread_synchronization.png)
+![lack thread synchronization](img/lack_thread_synchronization.png)
 
 **Figure 13.4: Lack of thread synchronization**
 
@@ -902,7 +902,7 @@ of the increment operator would perform the read and write of the variable as a 
 operation, not allowing any other threads to access the variable during the operation. 
 Figure 13.5 shows the result of making the `sheepCount` variable atomic.
 
-![thread sync using atomic](thread_synchronization_atomic_operations.png)
+![thread sync using atomic](img/thread_synchronization_atomic_operations.png)
 
 **Figure 13.5: Thread synchronization using atomic operations**
 
@@ -919,7 +919,7 @@ classes in the Concurrency API< these classes exist to make our life easier.
 
 **Table 13.6: Atomic classes**
 
-![atomic classes](atomic_classes.png)
+![atomic classes](img/atomic_classes.png)
 
 How dow we use atomic classes? Each class includes methods that are equivalent 
 to many of the primitive built-in operations that we use on primitives, such as the 
@@ -939,7 +939,7 @@ private void incrementAndReport() {
 
 **Table 13.7: Common atomic methods**
 
-![common atomic methods](atomic_methods.png)
+![common atomic methods](img/atomic_methods.png)
 
 How does this implementation differ from out previous examples? When we runt this 
 modification, we get varying output, such as the following:
@@ -1168,7 +1168,7 @@ listed in Table 13.8
 
 **Table 13.8: Lock methods**
 
-![lock methods](lock_methods.png)
+![lock methods](img/lock_methods.png)
 
 
 #### Attempting to Acquire a Lock
@@ -1524,7 +1524,7 @@ Table 13.9 list the common concurrent classes with which we should be familiar.
 
 **Table 13.9: Concurrent collection classes**
 
-![concurrent collection classes](concurrent_collection_classes.png)
+![concurrent collection classes](img/concurrent_collection_classes.png)
 
 
 Most of the classes in Table 13.9 are just concurrent versions of their non-
@@ -1583,7 +1583,7 @@ as the underlying collection. These methods as listed on Table 13.10.
 
 **Table 13.10: Synchronized Collections methods**
 
-![synchronized collections methods](synchronized_collections_methods.png)
+![synchronized collections methods](img/synchronized_collections_methods.png)
 
 
 If we are writing code to create a collection an it requires synchronization, 
@@ -1756,7 +1756,7 @@ are signing up for an account on the zoo's new visitor website. Both of them wan
 use the same username, ZooFan, and each sends a request to create the account at 
 the same time, as shown in Figure 13.6.
 
-![race condition user creation](race_condition_user_creation.png)
+![race condition user creation](img/race_condition_user_creation.png)
 
 **Figure 13.6: Race condition on user creation**
 

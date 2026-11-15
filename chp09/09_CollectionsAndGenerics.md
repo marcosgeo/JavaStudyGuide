@@ -49,7 +49,7 @@ Java Collection Framework even though it isn't technically a `Collection`. But _
 _is a collection, since it contains a group of objects_. The reason they are treated 
 differently is that they need different methods due to being key/value pairs.
 
-![Collections Interface](collections.png)
+![Collections Interface](img/collections.png)
 
 ### Using the Diamond Operator
 
@@ -361,7 +361,7 @@ both, the `List` and `Deque` interfaces.
 
 **Figure 9.1 - Collections Framework**
 
-![Collections Interface](collections.png)
+![Collections Interface](img/collections.png)
 
 
 ### Creating a _List_  with a Factory Method
@@ -373,7 +373,7 @@ convenient, especially when testing. Some of these methods return an immutable o
 
 **Table 9.1 - Factory methods to create list**
 
-![Factory Methods](factory_methods.png)
+![Factory Methods](img/factory_methods.png)
 
 Let's take a look at an example of these three methods
 ```
@@ -594,7 +594,7 @@ duplicates. We will look at each implementation that we need to know to write co
 
 **Figure 9.3 - Set**
 
-![Set](set.png)
+![Set](img/set.png)
 
 
 ### Comparing _Set_ Implementations
@@ -617,7 +617,7 @@ larger.
 
 **Figure 9.4 - an representation of the structure of the two types of set**
 
-![structure of set](set_structure.png)
+![structure of set](img/set_structure.png)
 
 
 ### Working with _Set_ Methods
@@ -704,7 +704,7 @@ case something goes wrong.
 
 **Table 9.3 - Queue Methods**
 
-![Queue methods](queue_methods.png)
+![Queue methods](img/queue_methods.png)
 
 Let's show a simple example
 ```
@@ -725,7 +725,7 @@ and adds more so, it is clear if we are working with the from or back of the que
 
 **Table 9.4 - Deque Methods**
 
-![Deque methods](deque_methods.png)
+![Deque methods](img/deque_methods.png)
 
 
 Let's see a deque example:
@@ -759,7 +759,7 @@ implementation, _we just change the methods used_!
 
 **Table 9.5 - Using Deque as a stack**
 
-![Deque as stack](stack_methods.png)
+![Deque as stack](img/stack_methods.png)
 
 Using the `Deque` as an stack:
 ```
@@ -788,7 +788,7 @@ contact list of our phone, we look up for a name, rather than to a number. A map
 also known as a dictionary in other programming languages.
 
 **Figure 9.8 - Map**
-![Map](map.png)
+![Map](img/map.png)
 
 The main thins that all `Map` class have in common is that they have keys and values. 
 Beyond that, they each offer different functionality, for example, a `TreeMap` is 
@@ -842,7 +842,7 @@ understand.
 
 **Table 9.6 - Map methods**
 
-![Map methods](map_methods.png)
+![Map methods](img/map_methods.png)
 
 While the table is a pretty long list of methods, many of the names are straightforward. 
 Also, many exist as a convenience. For example, `containsKey()` can be replaced with 
@@ -1061,7 +1061,7 @@ since  that key was no in the original list. "Jenny" was removed because the map
 function returned `null`.
 
 **Table 9.7 - Behavior of merge() method**
-![Map merge behavior](map_merge.png)
+![Map merge behavior](img/map_merge.png)
 
 [back to to](#chapter-9-collection-and-generics)
 
@@ -1073,13 +1073,13 @@ it is short and this will help us a lot when programming.
 
 **Table 9.8 - Java Collections Framework types**
 
-![Collection types](collections_types.png)
+![Collection types](img/collections_types.png)
 
 Additionally, we have be capable to describe the types in table 9.9
 
 **Table 9.9 - Collections attributes**
 
-![Collection attributes](collections_attributes.png)
+![Collection attributes](img/collections_attributes.png)
 
 We have to be capable of distinguish which data structure allow `null` values. The 
 data structures that involve sorting don no allow null values.
@@ -1379,7 +1379,7 @@ listed them for us:
 
 **Table 9.10 - Comparable x Comparator**
 
-![Comparable vs Comparator](comparable_x_comparator.png)
+![Comparable vs Comparator](img/comparable_x_comparator.png)
 
 As always, memorize this table is a must. Let's try to see why this doesn't compile:
 ```
@@ -1448,12 +1448,12 @@ the functional interfaces that we learned in the previous chapter.
 
 **Table 9.11 - Helper static methods for building a Comparator**
 
-![methods for comparator](comparator_methods_for_build.png)
+![methods for comparator](img/comparator_methods_for_build.png)
 
 
 **Table 9.12 - Helper default methods for building a Comparator**
 
-![default methods for comparator](compararator_def_meth_for_build.png)
+![default methods for comparator](img/compararator_def_meth_for_build.png)
 
 
 In the examples so far we often ignore `null` values in checking equality and comparing 
@@ -2052,7 +2052,7 @@ mark (?). We can use generic wildcards in three ways, as shown in Table 9.13.
 
 **Table 9.13: Types of bounds**
 
-![bound generic type](generic_types_bound.png)
+![bound generic type](img/generic_types_bound.png)
 
 This section looks at each of these three wildcard types.
 
@@ -2254,7 +2254,7 @@ because `FileNotFoundException` is a subclass of `IOException`, and the keyword 
 `super`. Java think: "Well, FileNotFoundException als happens to be an IOException, so 
 everything is fine.".
 
-![generic lower bound explanation](generic_lower_bounnd_explanation.png)
+![generic lower bound explanation](img/generic_lower_bounnd_explanation.png)
 
 ---
 
@@ -2313,7 +2313,7 @@ The problem is that we need to know what that type will be when instantiating th
 `ArrayList`. It wouldn't be useful anyway, because wwe can't add any elements to 
 that `ArrayList`.
 
-![generic lower bound explanation_ex-1](generic_lower_bounnd_explanation_ex1.png)
+![generic lower bound explanation_ex-1](img/generic_lower_bounnd_explanation_ex1.png)
 
 
 #### Passing Generic Arguments

@@ -77,7 +77,7 @@ is inside the `home` directory, with the `home` directory inside the `user` dire
 
 In the Figure 14.1, a directory and file is is organized in a hierarchical manner.
 
-![directory file hierarchy](directory_file_hierarchy.png)
+![directory file hierarchy](img/directory_file_hierarchy.png)
 
 **Figure 14.1: Directory and file hierarchy**
 
@@ -117,7 +117,7 @@ symbols are shown in Table 14.1.
 
 **Table 14.1: File-system symbols**
 
-![file system symbols](file_system_symbols.png)
+![file system symbols](img/file_system_symbols.png)
 
 Looking at Figure 14.2, suppose the current directory is _/fish/shark/hammerhead_. In 
 this case, _.../swim.txt_ is a valid relative path equivalent to _/fish/shark/swim.txt._ 
@@ -125,7 +125,7 @@ Likewise, _./play.png_ refers to _play.png_ in the current directory. The symbol
 also be combined for greater effect. For example, _../../clownfish_ is a relative path 
 equivalent to _/fish/clownfish_ within the file system.
 
-![relative paths using symbols](relative_paths_using_symbols.png)
+![relative paths using symbols](img/relative_paths_using_symbols.png)
 
 **Figure 14.2: Relative paths using path symbols**
 
@@ -251,7 +251,7 @@ require two types: an abstract class or interface and a factory or helper class.
 14.3 shows the relationships among the classes and interfaces we have used in this 
 chapter so far
 
-![I/O and NIO.2 class and interfaces relationship](io_nio_relationships.png)
+![I/O and NIO.2 class and interfaces relationship](img/io_nio_relationships.png)
 
 **Figure 14.3: I/O and NIO.2 class and interface relationship**
 
@@ -270,7 +270,7 @@ operate on the class/interface, while instance methods require an instance of an
 
 **Table 14.2: Options for creating File and Path**
 
-[options creating file path](file_and_path_creating_options.png)
+![options creating file path](file_and_path_creating_options.png)
 
 
 Just a memory refresh.
@@ -304,12 +304,12 @@ varargs parameters for now. Those will be explained later in the chapter.
 
 **Table 14.3: Common File and Path operations**
 
-![file and path operations](file_and_path_common_operations.png)
+![file and path operations](img/file_and_path_common_operations.png)
 
 
 **Table 14.4: Common File and Path operations**
 
-![file and path operation](file_and_path_operations.png)
+![file and path operation](img/file_and_path_operations.png)
 
 
 Now let's try to use some ot these APIs. The following is a sample program using only 
@@ -450,7 +450,7 @@ list of values. Table 14.5 presents the arguments we should be familiar.
 
 **Table 14.5: Common NIO.2 method arguments**
 
-![common nio methods arguments](nio_common_methods_arguments.png)
+![common nio methods arguments](img/nio_common_methods_arguments.png)
 
 With the exceptions of `Files.copy()` and `Files.move()`, we won't discuss these 
 varargs parameters each time we present a method. Their behavior should be straight-
@@ -813,7 +813,7 @@ Table 14.6 list the methods covered in this section.
 
 **Table 14.6: Path APIs**
 
-![NIO.2 path apis](nio_path_apis.png)
+![NIO.2 path apis](img/nio_path_apis.png)
 
 
 ### Creating, Moving, and Deleting Files and Directories
@@ -1077,7 +1077,7 @@ whether the file exists.
 Assume that the file system exists, as shown in Figure 14.4, with a symbolic link 
 from `/animals/snake` to `/animals/cobra`.
 
-![comparing file uniqueness](file_comparing_uniqueness.png)
+![comparing file uniqueness](img/file_comparing_uniqueness.png)
 
 **Figure 14: Comparing file uniqueness**
 
@@ -1149,7 +1149,7 @@ We demonstrate this principle in Figure 14.5. The I/O stream is so large that on
 start reading it, we have no idea where the beginning or the end is.  We just have a 
 pointes to our current position in the I/O stream and read data one block at a time.
 
-![visual representation of i-o stream](visual_representation_io_stream.png)
+![visual representation of i-o stream](img/visual_representation_io_stream.png)
 
 **Figure 14.5: Visual representation of an I/O stream**
 
@@ -1356,7 +1356,7 @@ abstract base classes that all I/O streams inherit from.
 
 **Table 14.7: The java.io abstract stream base classes**
 
-![java.io abstract base classes](io_abstract_base_classes.png)
+![java.io abstract base classes](img/io_abstract_base_classes.png)
 
 
 The Table 14.8 list the concrete I/O streams that we should be familiar with for 
@@ -1366,7 +1366,7 @@ bytes or character, can be decoded by the name alone.
 
 **Table 14.8: The java.io concrete I/O stream classes**
 
-![java.io concrete i/o stream classes](io_concrete_stream_classes.png)
+![java.io concrete i/o stream classes](img/io_concrete_stream_classes.png)
 
 
 Keep Tables 14.7 and 14.8 handy as we learn more about I/O streams in this chapter. 
@@ -1665,12 +1665,12 @@ public NIO.2 read and write methods.
 
 **Table 14.9: Common I/O read and write methods**
 
-![common io read and write methods](io_common_read_write_methods.png)
+![common io read and write methods](img/io_common_read_write_methods.png)
 
 
 **Table 14.10: Common NIO.2 read and write methods**
 
-![nio 2 common read and write methods](nio_common_read_write_methods.png)
+![nio 2 common read and write methods](img/nio_common_read_write_methods.png)
 
 [back to top](#chapter-14-inputoutput)
 
@@ -1697,7 +1697,7 @@ reciprocal process.
 Figure 14.6 shows a visual representation of serializing and deserializing a 
 `Giraffe` object to and from a `giraffe.txt` file.
 
-![serialization process](serialization_process.png)
+![serialization process](img/serialization_process.png)
 
 **Figure 14.6: Serialization process**
 
@@ -2399,7 +2399,7 @@ we many not have used these in practice, we need to know that they exists.
 
 **Table 14.11: Common I/O stream method**
 
-![common i-o methods](io_common_common_methods.png)
+![common i-o methods](img/io_common_common_methods.png)
 
 
 ### Discovering File Attributes
@@ -2490,7 +2490,7 @@ with the same object.
 Table 14.12 lists the commonly used attributes and view types.
 
 **Table 14.13: The attributes and view types**
-![attributes and view types](attributes_and_view_types.png)
+![attributes and view types](img/attributes_and_view_types.png)
 
 
 #### Retrieving Attributes
@@ -2724,7 +2724,7 @@ A _cycle_ is an infinite circular dependency in which an entry in a directory tr
 points to one of its ancestor directories. Let's say we had a directory tree as shown 
 in Figure 14.7 with the symbolic link `/birds/robin/allBirds` that points to `/birds`.
 
-![file system with cycle](file_system_with_cycle.png)
+![file system with cycle](img/file_system_with_cycle.png)
 
 **Figure 14.7: File system with cycle**
 
@@ -2735,7 +2735,7 @@ _regardless of the search strategy used_.
 
 **Table 14.13: Walking a directory with a cycle using breadth-first search**
 
-![walking directory with cycle breadth-first](walking_directory_with_cycle_breadth_first.png)
+![walking directory with cycle breadth-first](img/walking_directory_with_cycle_breadth_first.png)
 
 
 After  walking  a  distance  of 1  from  the start,  we hit the  symbolic link 
@@ -2800,7 +2800,7 @@ the classes look similar. We need to know this table well for the exam.
 
 **Table 14.14: Key APIs**
 
-![key apis](key_apis.png)
+![key apis](img/key_apis.png)
 
 
 Additionally, Figure 14.8 shows all of the I/O stream classes that we need to 
@@ -2808,7 +2808,7 @@ be familiar, with the exception of the filter streams. `FilterInputStream` and
 `FilterOutputStream` are high-level superclasses that filter or transform data. 
 They are rarely used directly.
 
-![diagram of i-o stream classes](io_stream_classes_diagram.png)
+![diagram of i-o stream classes](img/io_stream_classes_diagram.png)
 
 
 The `InputStreamReader` and `OutputStreamWriter` are incredibly convenient 

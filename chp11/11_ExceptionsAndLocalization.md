@@ -23,7 +23,7 @@ application that better adapt to change.
 
 [Understanding Exceptions](#understanding-exceptions)
 
-[Recognizing Exception Classe](#recognizing-exception-classes)
+[Recognizing Exception Classes](#recognizing-exception-classes)
 
 [Handling Exceptions](#handling-exceptions)
 
@@ -86,7 +86,7 @@ for all objects that represent these events. Not all of them have the word _exce
 in their class name, which can be confusing. Figure 11.1 shows the key subclasses of 
 `Throwable`.
 
-![throwable subclasses](throwable_subclasses.png)
+![throwable subclasses](img/throwable_subclasses.png)
 
 **Figure 11.1: Throwable subclasses
 
@@ -194,7 +194,7 @@ We need to know very closely the exceptions on Table 11.1, never forgetting that
 
 **Table 11.1: Types of exceptions and errors**
 
-![exceptions and errors](exceptions_and_errors_types.png)
+![exceptions and errors](img/exceptions_and_errors_types.png)
 
 
 ### Throwing an Exception
@@ -428,7 +428,7 @@ exceptions class are listed in Table 11.2.
 
 **Table 11.2: Unchecked exceptions**
 
-![unchecked exceptions](unchecked_exceptions.png)
+![unchecked exceptions](img/unchecked_exceptions.png)
 
 
 **ArithmeticException**
@@ -587,7 +587,7 @@ They mus be handled or declared. Common checked exception are listed in Table 11
 
 **Table 11.3: Checked exceptions**
 
-![checked exceptions](checked_exceptions.png)
+![checked exceptions](img/checked_exceptions.png)
 
 
 We need to know that these are all checked exceptions that must be handled or declared. 
@@ -603,7 +603,7 @@ ones listed in Table 11.4.
 
 **Table 11.4: Error**
 
-![errors](errors.png)
+![errors](img/errors.png)
 
 We just need to know that these errors are unchecked and the code if often unable 
 to recover from them.
@@ -622,7 +622,7 @@ handling exceptions
 Java uses a try statement to separate the logic that might throw an exception from 
 the logic to handle the exception. Figure 11.2 shows the syntax of a _try statement_.
 
-![try statement syntax](try_statement_syntax.png)
+![try statement syntax](img/try_statement_syntax.png)
 **Figure 11.2: try statement syntax**
 
 The code in the _try block_  in run normally. If any of the statements throws an 
@@ -939,7 +939,7 @@ have to note that parentheses are used to list those resources, and semicolons a
 used to separate the declarations. This works just like declaring a multiple 
 indexes in a for loop.
 
-![try with resources](try_with_resources.png)
+![try with resources](img/try_with_resources.png)
 
 **Figure 11.5: The syntax of a basic try-with-resources statement**
 
@@ -1319,7 +1319,7 @@ characters, shown in Table 11.5
 
 **Table 11.5: DecimalFormat symbols**
 
-![decimal format symbols](decimal_format_symbols.png)
+![decimal format symbols](img/decimal_format_symbols.png)
 
 These examples should help illuminate how these symbols work:
 ```
@@ -1408,7 +1408,7 @@ includes the symbols that we should be familiar with for out daily life.
 
 **Table 11.6: Common date/time symbols**
 
-![common date/time symbols](common_datetime_symbols.png)
+![common date/time symbols](img/common_datetime_symbols.png)
 
 
 Let's try some examples:
@@ -1441,7 +1441,7 @@ objects.
 
 **Table 11.7: Supported date/time symbols**
 
-![supported datetime symbols](supported_datetime_symbols.png)
+![supported datetime symbols](img/supported_datetime_symbols.png)
 
 
 ### Selecting a _format()_ Method
@@ -1633,7 +1633,7 @@ turn a `String` into a number.
 
 **Table 11.8: Factory methods to get a NumberFormat**
 
-![factory methods number format](factory_methods_number_format.png)
+![factory methods number format](img/factory_methods_number_format.png)
 
 
 ### Formatting Numbers
@@ -1823,7 +1823,7 @@ retrieve an instance of a `DateTimeFormatter` using the default locale.
 
 **Table 11.9: Factory methods to get DateTimeFormatter**
 
-![factory methods to date/time formatter](factory_methods_datetime_formatter.png)
+![factory methods to date/time formatter](img/factory_methods_datetime_formatter.png)
 
 
 Each method in the table takes a `FormatStyle` parameter (or two) with possible 
@@ -1876,7 +1876,7 @@ values in Table 11.10
 
 **Table 11.10: Locale.Category values**
 
-![locale category values](locale_category_values.png)
+![locale category values](img/locale_category_values.png)
 
 
 When we call `Locale.setDefault()` with a locale, the DISPLAY and FORMAT are 
@@ -2046,7 +2046,7 @@ locale is U.S English.
 
 **Table 11.11: Resource bundle for French/France with default locale English/US**
 
-![resource bundle for locale](resource_bundle_for_locale.png)
+![resource bundle for locale](img/resource_bundle_for_locale.png)
 
 
 As another way of remembering the order of Table 11.11, follow this steps:
@@ -2074,7 +2074,7 @@ to the top. Table 11.12 shows how to do this.
 
 **Table 11.12: Selecting resource bundle properties**
 
-![selecting resource bundle](selecting_resource_bundle.png)
+![selecting resource bundle](img/selecting_resource_bundle.png)
 
 
 Once a resource bund has been selected, only properties along a single hierarchy 

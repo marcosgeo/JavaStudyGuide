@@ -33,7 +33,7 @@ that have something in it or might instead be empty.
 
 **Figure 10.1 - Optional**
 
-![optional box figure](optional.png)
+![optional box figure](img/optional.png)
 
 
 ### Creating an _Optional_
@@ -99,7 +99,7 @@ look to the instance methods
 
 **Table 10.1 - Common Optional instance methods**
 
-![optional instance methods](optional_intance_methods.png)
+![optional instance methods](img/optional_intance_methods.png)
 
 We already seen `get()` and `isPresent()`. The other methods allows us to write code 
 that uses an `Optional` in one line without having to use the ternary operator. This 
@@ -252,7 +252,7 @@ assembly line!. There are three parts to a stream pipeline, as shown in Figure 1
 
 **Figure 10.2 - Stream pipeline**
 
-![stream pipeline](stream_pipeline.png)
+![stream pipeline](img/stream_pipeline.png)
 
 Notice that the operations are unknown to us. When viewing the assembly line from the 
 outside, we care only about what comes in and goes out. What happens in between is an 
@@ -326,7 +326,7 @@ These are the way of creating a source for streams, give a `Collection` instance
 
 **Table 10.3 - Creating source**
 
-![creating streams source](stream_creating_source.png)
+![creating streams source](img/stream_creating_source.png)
 
 
 ### Using Common Terminal Operations
@@ -341,7 +341,7 @@ Table 10.4 summarizes this section, they will be explained from simplest to most
 
 **Table 10.4 - Terminal Stream Operations**
 
-![terminal stream operations](stream_terminal_operations.png)
+![terminal stream operations](img/stream_terminal_operations.png)
 
 
 #### Counting
@@ -963,7 +963,7 @@ intermediate operation in the pipeline feeds into the next.
 
 **Figure 10.5 - Stream pipeline with multiple operations**
 
-![pipeline operation](pipeline_operations.png)
+![pipeline operation](img/pipeline_operations.png)
 
 
 Remembering that the assembly line foreperson is figuring out hwo to best implement 
@@ -1107,7 +1107,7 @@ that common methods like `empty()` are not include, but the exists in this strea
 
 **Table 10.5 - Common primitive stream methods**
 
-![primitive streams methods](primitive_streams_methods.png)
+![primitive streams methods](img/primitive_streams_methods.png)
 
 Some methods for creating a primitive stream are equivalent to how we created the 
 source for a regular `Stream`. We can create an empty stream with this:
@@ -1193,7 +1193,7 @@ Table 10.6 shows that there is a method for mapping between any stream types.
 
 **TAble 10.6: Mapping methods between types of streams**
 
-![streams mapping methods](streams_mapping_methods.png)
+![streams mapping methods](img/streams_mapping_methods.png)
 
 
 Of course, they have to be compatible types for this to work. Java requires a 
@@ -1211,7 +1211,7 @@ they do what we expect.
 
 **Table 10.7: Function parameter when mapping between types of stream**
 
-![streams mapping methods parameters](streams_mapping_methods_parameters.png)
+![streams mapping methods parameters](img/streams_mapping_methods_parameters.png)
 
 
 We nee to memorize this two tables, it's not as hard as i might seen. There are 
@@ -1288,7 +1288,7 @@ Table 10.8 shows the minor difference among the three.
 
 **Table 10.8: Optional types for primitive**
 
-![optional types for primitive](optional_types_primitive.png)
+![optional types for primitive](img/optional_types_primitive.png)
 
 A number of stream methods return an optional such as `min()` or `findAny()`. These 
 each return the corresponding optional type. The primitive stream implementations also 
@@ -1550,7 +1550,7 @@ on this. The simplified methods we need to know are in table 10.9.
 
 **Table 10.9: Spliterator methods**
 
-![spliterator methods](spliterator_methods.png)
+![spliterator methods](img/spliterator_methods.png)
 
 
 Let's look at an example where we divide the bag int three:
@@ -1612,7 +1612,7 @@ following section. We left out the generic type for simplicity.
 
 **Table 10.10: Collectors methods**
 
-![collectors methods](collectors_methods.png)
+![collectors methods](img/collectors_methods.png)
 
 
 There is one more collector called `reducing()`.  Its is a general reduction in case 
