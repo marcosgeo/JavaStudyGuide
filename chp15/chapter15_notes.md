@@ -24,6 +24,7 @@ queries, process the results, and work with transactions.
 
 [Calling a CallableStatement](#calling-a-callablestatement)
 
+[Controlling Data with Transactions](#controlling-data-with-transactions)
 
 
 ## Introducing Relational Databases and SQL
@@ -547,7 +548,7 @@ public static void register(Connection conn) throws SQLException {
 However, in this approach, everything is hard-coded. We want to be able to pass 
 in the values as parameters. Luckily, a `PreparedStatement` allows us to set parameters. 
 Instead of specifying the three values in th SQL, we can use a question mark (?). A _bind_ 
-_variable_ is a placeholder that lets us specify the actual values at runtime. A bind 
+_variable_ is a placeholder that let us specify the actual values at runtime. A bind 
 variable is like a parameter, and we will see bind variables references as both, variables 
 and parameters. We can rewrite our SQL statement using bind variables.
 ```
@@ -746,15 +747,15 @@ at each row. The code looks like this:
 25:   ResultSet rs = ps.executeQuery()
 26: ) {
 27:   while (rs.next()) {
-28:     int id = re.getInt("id");
-29:     String name = res.getString("name");
+28:     int id = rs.getInt("id");
+29:     String name = rs.getString("name");
 30:     idToNameMap.put(id, name);
 31:   }
 32:   System.out.println(idToNameMap);
 33: }
 ```
 
-it outputs:
+It outputs:
 ```
 {1=African Elephant, 2=Zebra}
 ```
@@ -942,4 +943,209 @@ done that we have a nested try-with-resources on line 35 to create the `ResultSe
 [back to top](#chapter-15-jdbc)
 
 
-## CAlling a CallableStatement
+## Calling a CallableStatement
+
+In some situations, it is useful to store SQL queries in the database instead of 
+packaging them with the Java code. This is particularly useful when there are many 
+complex queries. A _stored procedure_ is code that is compiled in advance and stored 
+in the database. Stored procedures are commonly written in a database-specific variant 
+of SQL, which varies among database software providers.
+
+Using a stored procedure reduces network round trips. It also allows database experts 
+to own that part of the code. However, stored procedures are database-specific and 
+introduce complexity into maintaining the application. Examples of stored procedures 
+can be seen in the code for setting up the sample database. For now, we need to know 
+how to call stored procedures, but not decide when to use them.
+
+We will be using four stored procedures in this section.  Table 15.7 summarizes what we 
+need to known about them. In the real world, none  of these would be good implementations 
+since they aren't complex enough to warrant being  stored  procedures. As  we  can see in 
+the table, stored procedures allow parameters to be for input only, output only, or both.
+
+**Table 15.7: Sample stored procedures**
+
+![stored procedures sample](img/stored_procedures_samples.png)
+
+
+In the next four section, we look at how to cal each ot these stored procedures.
+
+
+### Calling a Procedure without Parameters
+
+Our `read_e_names()` stored procedure doesn't take any parameters. It does return 
+a `ResultSet`. Since we worked with a `ResultSet` in `PreparedStatement` section, 
+here we can focus on how the stored procedure is called.
+```
+12: String sql = "{call read_e_names()}";
+13: try (
+14:   CallableStatement cs = conn.prepareCall(sql);
+15:   ResultSet rs = cs.executeQuery()
+16: ) {
+17:   while (rs.next()) {
+18:     System.out.println(rs.getString(3));
+19:   }
+20: }
+```
+
+Line 12 introduces a new bit of syntax. A stored procedure is called by putting the 
+word `call` and the procedure name in braces ({}). Line 14 creates a `CallableStatement` 
+object. Here, since is not a PreparedStatement we do not use prepareStatement, we use 
+the `prepareCall()` method instead.
+
+Lines 15 to 19 should look familiar. They are the standard logic we have been using 
+to get a `ResultSet` and loop through it. This stored procedure returns the underlying 
+table, so the columns are the same.
+
+
+### Passing an _IN_ Parameter
+
+A stored procedure that always returns the same thing is only somewhat useful. 
+We've created a new version of that stored procedure that is more generic. The 
+`read_names_by_letter` stored procedure takes a parameter for the prefix or first 
+letter of the stored procedure. An `IN` parameter is used for input.
+
+This is the stored procedure created on database:
+```
+CREATE PROCEDURE read_name_by_letter(IN prefix VARCHAR(10))
+READS SQL DATA DYNAMIC RESULT SETS 1
+BEGIN ATOMIC
+DECLARE RESULT CURSOR WITH RETURN FOR
+  SELECT * FROM names WHERE LOWER(name) LIKE CONCAT(LOWER(prefix), '%');
+OPEN RESULT;
+END
+```
+
+There are two differences in calling it compared to our previous stored procedure.
+```
+25: var sql = "{call read_names_by_letter(?)}";
+26: try (var cs = conn.prepareCall(sql)) {
+27:   cs.setString("prefix", "Z");
+28: 
+29:   try (var rs = cs.executeQuery()) {
+30:     while (rs.next()) {
+31:       System.out.println(rs.getString(3));
+32:     }
+33:   }
+34: }
+```
+
+On line 25, we have to pass a `?` to show we heave a parameter. This should be 
+familiar from bind variables with a PreparedStatement. On line 27, we set the 
+value fo that parameter, `prefix`. Unlike with PreparedStatement, we can use either 
+the parameter number (starting from 1) or the parameter name. That means these two 
+statement are equivalent:
+```
+cs.setString(1, "Z");
+cs.setString("prefix", "Z");
+```
+
+
+### Returning a _OUT_ Parameter
+
+In our previous examples, we returned a `ResultSet`. Some procedures return other 
+information. Luckily, stored procedures aca have `OUT` parameter for output. The 
+`magic_number()` stored procedures set its `OUT` parameter to 42. There are a few 
+differences here:
+```
+40: var sql = "{?= call magic_number(?)}"
+41: try (var cs = conn.prepareCAll(sql)) {
+42:   cs.registerOutParameter(1, Types.INTEGER);
+43:   cs.execute();
+44:   System.out.println(cs.getInt("num"));
+45: }
+```
+
+On line 40, we include two special characters (?=) to specify that the stored 
+procedure has an output value. This is optional since we have the `OUT` parameter, 
+but it does aid in readability.
+
+On line 42, we register the `OUT` parameter. This is important. It allows JDBC to 
+retrieve the value on line 44. We need to remember to always call `registerOutParameter()` 
+for each `OUT` or `INOUT` parameter existing in the stored procedure.
+
+On line 43, we call `execute()` instead of executeQuery() since we are not returning 
+a ResultSet from our stored procedure.
+
+
+### Working with _INOUT_ Parameter
+
+Finally, it is possible to use the same parameter for both input and output. As we 
+read this code, we see whether we can spot which lines are required for the `IN` part 
+and which are required for the `OUT` part.
+
+This is the procedure stored on database, note the name of the parameter:
+```
+CREATE PROCEDURE double_number(INOUT num INT)
+READS SQL DATA
+DYNAMIC RESULT SETS 1
+BEGIN ATOMIC
+SET num = num * 2;
+END
+```
+
+This is how we call this stored procedure.
+
+```
+50: var sql = "{call double_number(?)}";
+51: try (var cs = conn.prepareCall(sql)) {
+52:   cs.setInt(1, 8);                            // positional parameter 1 = 8
+53:   cs.registerOutParameter(1, Types.INTEGER);
+54:   cs.execute();
+55:   System.out.println(cs.getInt("num"));
+56: }
+```
+
+For an `IN` parameter, line 52 is required since it sets the value. For an `OUT` 
+parameter, line 53 is required to register it. Line 54 uses `execute()` again because 
+we are not returning a ResultSet.
+
+We have to remember that an `INOUT` parameter acts as both an `IN` parameter and an 
+`OUT` parameter, so it has all the requirements of both.
+
+
+### Comparing Callable Statement Parameters
+
+Table 15.8 reviews the different types of parameters we need to know.
+
+**Table 15.8: Stored procedure parameters types**
+
+![stored procedures parameters types](img/stored_procedures_parameters_types.png)
+
+
+### Using Additional Options
+
+So far, we've been creating `PreparedStatement`and `CallableStatement` with the 
+default options. Both support `ResultSet` type and concurrency options. Not all 
+options are available on all databases. Luckily, we just have to be able to 
+recognize them when they appear.
+
+There area three `ResultSet` integer types values:
+- `ResultSet.TYPE_FORWARD_ONLY`: can go through the ResultSet on one row at a time.
+- `ResultSet.TYPE_SCROLL_INSENSITIVE`: can go through the ResultSet in any order but 
+    will not see changes made to the underlying database table.
+- `ResultSet.SCROLL_SENSITIVE`: can go through the ResultSet in any order and will 
+    see changes made to the underlying database table.
+
+
+There are two `ResultSet` integer concurrency mode values:
+- `ResultSet.CONCUR_READ_ONLY`: the ResultSet cannot be updated
+- `ResultSet.CONCUR_UPDATABLE`: the ResultSet can b updated.
+
+
+These options are integer values, not enum values, which means we can pass both 
+as additional parameters after the SQL.
+``` 
+conn.prepareCall(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+
+conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+```
+
+We have to pay attention carefully on these parameters and always remember that the 
+order in which they come. The type comes first and concurrency mode in second.
+
+[back to top](#chapter-15-jdbc)
+
+
+## Controlling Data with Transactions
+
+Until now, any changes we made to the data

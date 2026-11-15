@@ -57,7 +57,7 @@ The contents of this file are the _module declaration_. Figure 12.1 list just a 
 modules a zoo might need. We decided to focus on the animal interactions in our example. 
 The full zoo could easily have a dozen modules.
 
-![design modular system](design_modular_system.png)
+![design modular system](img/design_modular_system.png)
 
 **Figure 12.1: Design of a modular system**
 
@@ -66,7 +66,7 @@ zoo.animal.talks module. There are three packages with two classes each. (It's a
 zoo). There is also a strange file called module-info.java. This file is required to 
 be inside all modules. More detail will be explained later in this chapter.
 
-![looking inside module](looking_inside_module.png)
+![looking inside module](img/looking_inside_module.png)
 
 **Figure 12.2: Looking inside a module**
 
@@ -101,7 +101,7 @@ chose this on to start with because all the other modules depend on it. Figure 1
 show the design of this module. In addition to the module-info.java file, it has one 
 package with on class inside.
 
-![contents animal feeding](animal_feeding_contents.png)
+![contents animal feeding](img/animal_feeding_contents.png)
 
 **Figure 12.3: Contents of zoo.animal.feeding**
 
@@ -146,7 +146,7 @@ later in the chapter.
 Now let's make sure that the files are in the right directory structure. Figure 12.4 
 shows the expected directory structure.
 
-![directory structure module zoo animal feeding](animal_feeding_module_structure.png)
+![directory structure module zoo animal feeding](img/animal_feeding_module_structure.png)
 
 **Figure 12.4: module zoo.animal.feeding directory structure**
 
@@ -208,7 +208,7 @@ but these are the ones that we need never forget.
 
 **Table 12.1: javac common options**
 
-![javac common options](javac_common_options.png)
+![javac common options](img/javac_common_options.png)
 
 ---
 **Building Modules**
@@ -234,7 +234,7 @@ is required to the `boo.module/com.sybex.OCP` part. It is important to remember 
 specify the module name followed by a slash (/), followed by the fully qualified class 
 name.
 
-![java running module](java_running_module.png)
+![java running module](img/java_running_module.png)
 
 **Figure 12: running a module using java**
 
@@ -260,7 +260,7 @@ compiled the code. This will change once we package the module and run that.
 
 **Table 12.2: options for using modules with java**
 
-![modules options use java](java_options_for_modules.png)
+![modules options use java](img/java_options_for_modules.png)
 
 
 ### Packaging Out First Module
@@ -287,7 +287,7 @@ except for the directory. In the previous example, it was `feeding`. In this one
 is the module path of `mods`. Since the module path is used, a module JAR is being run.
 
 
-![project structure after commands](project_structure_run.png)
+![project structure after commands](img/project_structure_run.png)
 
 **My figure: project structure after running commands**
 
@@ -300,7 +300,7 @@ Now that or `zoo.animal.feeding` module is solid, we can start thinking about ou
 other modules. As we can see in the figure 12.6, all there of the other modules in 
 our system depend on the `zoo.animal.feeding` module.
 
-![zoo modules dependency](zoo_modules_dependency.png)
+![zoo modules dependency](img/zoo_modules_dependency.png)
 
 **Figure 12.6: modules depending on zoo.animal.feeding**
 
@@ -343,7 +343,7 @@ of it as a healthcare privacy for the animals.
 Figure 12.7 shows the contends of this module. Remembering that all modules must have 
 a `module-info.java file.
 
-![contents of zoo animal care](animal_care_contents.png)
+![contents of zoo animal care](img/animal_care_contents.png)
 
 **Figure 12.7: contents of zoo.animal.care**
 
@@ -413,7 +413,7 @@ In Figure 12.8, observe that the `zoo.animal.talks` module depends on two module
 `zoo.animal.feeding` and `zoo.animal.care`. This means that there must be two 
 `requires` statements in the `module-info.java` file.
 
-![animal talks dependencies](animal_talks_dependencies.png)
+![animal talks dependencies](img/animal_talks_dependencies.png)
 
 **Figure 12.9: dependencies for zoo.animal.talks**
 
@@ -478,13 +478,13 @@ jar -cvf mods/zoo.animal.talks.jar -C talks/ .
 Our final module is `zoo.staff`. Figure 12.10 shows that there is only one package 
 inside. We will not be exposing this package outside the module.
 
-![contents of zoo staff](zoo_staff_contents.png)
+![contents of zoo staff](img/zoo_staff_contents.png)
 
 **Figure 12.10: contends of zoo.staff**
 
 Based on Figure 12.11 we should know what should go into the `module-info.java`.
 
-![zoo staff dependencies](zoo_staff_dependencies.png)
+![zoo staff dependencies](img/zoo_staff_dependencies.png)
 
 **Figure 12.11: Dependencies for zoo.staff**
 
@@ -514,7 +514,7 @@ javac -p mods \
 jar -cvf mods/zoo.staff.jar -C staff/ .
 ```
 
-[back to top](#chapter-12-modules)
+[back to top](img/#chapter-12-modules)
 
 
 ## Diving into the Module Declaration
@@ -569,7 +569,7 @@ The `exports` directive essentially gives us more levels os access control. Tabl
 
 **Table 12.3: Access control with modules**
 
-![access control with modules](access_control_with_modules.png)
+![access control with modules](img/access_control_with_modules.png)
 
 
 ### Requiring a Module Transitively
@@ -582,7 +582,7 @@ Figure 12.12 shows the modules with dashed lines for the redundant relationships
 and solid line for "strong" relationships. This shows us how the module relationship 
 would like if we were to only use transitive dependencies.
 
-![transitive dependencies for modules](modules_transitive_dependencies.png)
+![transitive dependencies for modules](img/modules_transitive_dependencies.png)
 
 **Figure 12.12: Transitive dependency version of modules**
 
@@ -705,7 +705,7 @@ This does not compile because a modifier that uses the `open` modifier is not
 permitted to use the `opens` directive. After all, the packages are already open!
 
 
-[back to top](#chapter-12-modules)
+[back to top](img/#chapter-12-modules)
 
 
 ## Creating a service
@@ -719,7 +719,7 @@ Figure 12.13. In this example, the `zoo.tours.api` and `zoo.tours.reservations`
 modules make up the service since they consist of the interface and lookup 
 functionality.
 
-![modules in tour application](service_modules_tour_application.png)
+![modules in tour application](img/service_modules_tour_application.png)
 
 **Figure 12.13: modules in the tour application**
 
@@ -1011,17 +1011,17 @@ the concepts.
 
 **Table 12.4: services and respective directives** 
 
-![services and respective directives](modules_directives.png)
+![services and respective directives](img/modules_directives.png)
 
 
 Table 12.5 list all the directives we need to know.
 
 **Table 12.5: directives usage for packages**
 
-![directives usage](modules_directives_usage.png)
+![directives usage](img/modules_directives_usage.png)
 
 
-[back to top](#chapter-12-modules)
+[back to top](img/#chapter-12-modules)
 
 
 ## Discovering modules
@@ -1057,7 +1057,7 @@ to the JDK. Table 12.7 lists all the modules that bigint with `java`.
 
 **Table 12.7: modules prefixed with 'java'**
 
-![modules prefixed with java](modules_prefixed_with_java.png)
+![modules prefixed with java](img/modules_prefixed_with_java.png)
 
 
 Table 12.8 lists all the modules that begin with `jdk`. We don't have to memorize 
@@ -1065,7 +1065,7 @@ them, but is good to recognize them.
 
 **Table 12.8: modules prefixed with 'jdk'**
 
-![modules prefixed with jdk](modules_prefixed_with_jdk.png)
+![modules prefixed with jdk](img/modules_prefixed_with_jdk.png)
 
 
 ### Getting Details with _java_
@@ -1376,7 +1376,7 @@ common modes.
 
 **Table 12.9: Modes using jmod**
 
-![modes using jmode](jmod_usage_modes.png)
+![modes using jmode](img/jmod_usage_modes.png)
 
 
 ### Creating Java Runtimes with _jlink_
@@ -1411,22 +1411,22 @@ tool like `javac` don't need to be in a runtime distribution.
 
 **Table 12.10: command line operations comparing**
 
-![command-line operations comparing](command_line_operations_comparing.png)
+![command-line operations comparing](img/command_line_operations_comparing.png)
 
 
 **Table 12.11: javac, main options**
 
-![javac main options](javac_cli_main_options.png)
+![javac main options](img/javac_cli_main_options.png)
 
 
 **Table 12.12: java, main options**
 
-![java main options](java_cli_main_options.png)
+![java main options](img/java_cli_main_options.png)
 
 
 **Table 12.13: jar, main options**
 
-![jar main options](jar_cli_main_options.png)
+![jar main options](img/jar_cli_main_options.png)
 
 
 [back to top](#chapter-12-modules)
@@ -1486,7 +1486,7 @@ module name specified in the manifest.
 
 **Table 12.16: practicing with automatic module names**
 
-![modules automatic name](module_automatic_names.png)
+![modules automatic name](img/module_automatic_names.png)
 
 
 While the algorithm for creating automatic module names does its best, it can't 
@@ -1519,7 +1519,7 @@ is unable to read form the `classpath`.
 
 **Table 12.17: properties of module types**
 
-![module types properties](module_types_properties.png)
+![module types properties](img/module_types_properties.png)
 
 
 [back to top](#chapter-12-modules)
@@ -1546,7 +1546,7 @@ figure are equivalent. The arrows show the dependencies by pointing from the pro
 that will require the the dependency to the one that makes it available. In the 
 language of modules, the arrow will go from requires to exports.
 
-![determining the order](modules_determining_order.png)
+![determining the order](img/modules_determining_order.png)
 
 **Figure 12.14: Determining the order**
 
@@ -1559,7 +1559,7 @@ dependencies. Figure 12.15 show that the order is no always unique. Since two of
 the project do no have an arrow between them, either order is allowed when deciding 
 migration order.
 
-![determining order not unique](modules_order_not_unique.png)
+![determining order not unique](img/modules_order_not_unique.png)
 
 **Figure 12.15: determining order when not unique**
 
@@ -1590,7 +1590,7 @@ During migration, we have a mix of named modules and unnamed modules. The named
 modules are the lower-level ones that have been migrated. They are on the module 
 path and not allowed to access any unnamed modules.
 
-![modules bottom up migration](modules_bottom_up_migration.png)
+![modules bottom up migration](img/modules_bottom_up_migration.png)
 
 **Figure 12.16: bottom-up migration**
 
@@ -1619,7 +1619,7 @@ To a top-down migration, we follow these steps:
 We can see this procedure applied in order to migrate three projects in Figure 12.17. 
 Notice that each project is converted to a module in turn.
 
-![modules top down migration](modules_top_down_migration.png)
+![modules top down migration](img/modules_top_down_migration.png)
 
 **Figure 12.17: Top-down migration**
 
@@ -1635,7 +1635,7 @@ must to know both very well.
 
 **Table 12.18: Comparing migration strategies**
 
-![comparing migration strategies](modules_migration_strategies.png)
+![comparing migration strategies](img/modules_migration_strategies.png)
 
 
 ### Splitting a Big Project into Modules
@@ -1646,7 +1646,7 @@ Figure 12.18 shows an imaginary systems's decomposition. Notice that there are s
 packages on both, the left and right sides. There are fewer modules because some 
 packages share a module.
 
-![first attempt decomposition](modules_decomposition_attempt.png)
+![first attempt decomposition](img/modules_decomposition_attempt.png)
 
 **Figure 12.18: Fist attempt decomposition**
 
@@ -1664,7 +1664,7 @@ modules without any cyclic dependencies. Notice the new module `zoo.tickets.etec
 We created new packages to put in that module. This allows the developers to put 
 the common code in there and break the dependency. Mo more cyclic dependencies!
 
-![second attempt decomposition](modules_decomposition_attempt_2.png)
+![second attempt decomposition](img/modules_decomposition_attempt_2.png)
 
 **Figure 12.19: removing cyclic dependencies**
 
