@@ -20,6 +20,10 @@ queries, process the results, and work with transactions.
 
 [Working with PreparedStatement](#working-with-preparedstatement)
 
+[Getting Data from a ResultSet](#getting-data-from-a-resultset)
+
+[Calling a CallableStatement](#calling-a-callablestatement)
+
 
 
 ## Introducing Relational Databases and SQL
@@ -527,3 +531,415 @@ key methods on `PreparedStatement`. Table 15.4 shows what is returned by each me
 
 
 ### Working with Parameters
+
+Suppose our zoo acquires a new elephant and we want to register it in out names 
+table. We've already learned enough to do this.
+```
+public static void register(Connection conn) throws SQLException {
+  var sql = "INSERT INTO names VALUES (6, 1, 'Edith')";
+
+  try (var ps = conn.prepareStatement()) {
+    ps.executeUpdate();
+  }
+}
+```
+
+However, in this approach, everything is hard-coded. We want to be able to pass 
+in the values as parameters. Luckily, a `PreparedStatement` allows us to set parameters. 
+Instead of specifying the three values in th SQL, we can use a question mark (?). A _bind_ 
+_variable_ is a placeholder that lets us specify the actual values at runtime. A bind 
+variable is like a parameter, and we will see bind variables references as both, variables 
+and parameters. We can rewrite our SQL statement using bind variables.
+```
+String sql = "INSERT INTO names VALUES (?, ?, ?)";
+```
+
+Bind variables make the SQL easier to read since we no loner need to use quotes around 
+`String` values in the SQL. Now we can pass the parameters to the method itself.
+```
+14: public static void register(
+15:       Connection conn, int key, int type, String name) throws SQLException {
+16:
+17:   String sql = "INSERT INTO names VALUES (?, ?, ?)";
+18: 
+19:   try (PreparedStatement ps = conn.prepareStatement(sql)) {
+20:     ps.setInt(1, key);
+21:     ps.setString(3, name);
+22:     ps.setInt(2, type);
+23:     ps.execute();
+24:   }
+25: }
+```
+
+Line 19 creates a `PreparedStatement` using our SQL that contains three bind variables. 
+Lines 20 to 22 set those variables. We can think of the bind variables as a list of 
+parameters, where each is se in turn. Notice how the bind variables can be set in any 
+order. Line 23 executes the query and runs the update.
+
+Notice how the bind variables are counted staring with 1 rather tan 0. This is really 
+important, so will repeat it. **JDBC starts counting with 1 rather than 0.** This is 
+because SQL indexes starts at 1.
+
+In the previous example, we set the parameters out of order. That's perfectly fine. The 
+rule is only that they are each set before the query is executed. Let's see what happens 
+if we don't set all the bind variables.
+```
+var sql = "INSERT INTO names VALUES (?, ?, ?)";
+try (var ps = conn.prepareStatement()) {
+  ps.setInt(1, key);
+  ps.setInt(2, type);
+  // missing set parameter number 3
+  ps.executeUpdate();
+}
+```
+
+The code compiles, and we get a `SQLException`. The message may vary based on our 
+database driver.
+```
+Exception in thread "main" java.sql.SQLException: Parameter not set
+```
+
+What about if we try to set more values than we have as bind variables?
+```
+var sql = "INSERT INTO names VALUES (?, ?)";
+try (var ps = conn.prepareStatement(sql)) {
+  ps.setInt(1, key);
+  ps.setInt(2, type);
+  ps.setString(3, name);
+  ps.executeUpdate();
+}
+```
+
+Again, we get a `SQLException`, this time with a different message. On HyperSQL, 
+that message was as follows:
+```
+Exception in thread "main" java.sql.SQLException:
+  row column count mismatch in statement [INSERT INO names VALUES (?, ?)]
+```
+
+Table 15.5 shows the methods we need to know to set bind values. The ones that we 
+need to know for our daily life are easy to remember since they are called set followed 
+be the nme ot the type we are setting. There are many others, like dates, that are out 
+of scope for the exam.
+
+**Table 15.5: PreparedStatement methods**
+
+![prepared statement methods](img/ps_set_methods.png)
+
+
+The first column shows the method name, and the second shows the type that Java uses. 
+The  third  column shows the  type name that  could be in the database. There is some 
+variation by databases, so we need to check our specific database documentation.
+
+The `setNull()` method takes an `int` parameter representing the column type in the 
+database. The `setObject()` method works with any Java type. If we pass a primitive, 
+it will be autoboxed into a wrapper type. That means we can rewrite our example as 
+follows:
+```
+String sql = "INSERT INTO names VALUES (?, ?, ?)";
+try (PreparedStatement ps = conn.prepareStatement(sql)) {
+  ps.setObject(1, key);
+  ps.setObject(2, type);
+  ps.setObject(3, name);
+  ps.executeUpdate();
+}
+```
+
+Java will handle type conversion for us. It is still better to call the more specific 
+setter methods since that will gives us a compile-time error if we pass the wrong type 
+instead of a runtime error.
+
+
+### Updating Multiple Records
+
+Suppose we get two new elephants and want to add both. We can use the same 
+`PreparedStatement` object.
+```
+var sql = "INSERT INTO names VALUES (?, ?, ?)";
+
+try (var ps = conn.prepareStatement(sql)) {
+  ps.setInt(1, 20);
+  ps.setInt(2, 1);
+  ps.setString(3, "Ester");
+  ps.executeUpdate();
+
+  ps.setInt(1, 21);
+  ps.setInt(3, "Elias");
+  ps.executeUpdate();
+}
+```
+
+Note that we set all three parameters when adding Ester but only two for Elias. The 
+`PreparedStatement` is smart enough to remember the parameters that were already set 
+and retain them. We only need to set the ones that are different.
+
+---
+**Batching Statements**
+
+JDBC supports batching so we can run multiple statements in fewer trips to the database. 
+Often the database is located on a different machine than the Java code runs on. Saving 
+trips to the database saves time because network call can be expensive. For example, if 
+we need to insert 1000 records into the database, inserting them as a single network call 
+(as opposed to 1000 network calls) is usually _a lot_ faster. 
+
+The `addBatch()` and `executeBatch()`methods are very useful in this situations.
+```
+public static void register(
+      Connection conn, int firstKey, int type, String... names) throws SQLException {
+  
+  var sql = "INSERT INTO names VALUES (?, ?, ?)";
+  var nextIndex = firstKey;
+
+  try (var ps = conn.prepareStatement(sql)) {
+    ps.setInt(2, type);
+
+    for (var name : names) {
+      ps.setInt(1, nextIndex);
+      ps.setString(3, name);
+      ps.addBatch();
+
+      nextIndex++;
+    }
+    int[] result = ps.executeBatch();
+    System.out.println(Arrays.toString(result));
+  }
+}
+```
+
+Now we call this method with two names:
+```
+register(conn, 100, 1, "Elias", "Ester");
+```
+
+The output show that the array has two elements since there are two different 
+items in the batch. Each added one row in the database.
+```
+[1, 1]
+```
+
+We can use batching to break up large operations, such as inserting 10 million 
+records  in  groups of 100.  In practice, it takes a bit of work to determine an 
+appropriate batch size, but the performance of using batch if normally far better 
+than inserting one row at a time (or all ten million at once).
+
+---
+
+[back to to](#chapter-15-jdbc)
+
+
+## Getting Data from a _ResultSet_
+
+A database isn't useful if we can't get our data. We start by showing how to go 
+through a `ResultSet`. Then we go through the different methods to ge columns by type.
+
+
+### Reading a _ResultSet_
+
+When working with a `ResultSet`, most of the time, we will write a loop to look 
+at each row. The code looks like this:
+```
+20: String sql = "SELECT id, name FROM exhibits";
+21: var idToNameMap = new HashMap<Integer, String>();
+22: 
+23: try (
+24:   var ps = conn.prepareStatement(sql);
+25:   ResultSet rs = ps.executeQuery()
+26: ) {
+27:   while (rs.next()) {
+28:     int id = re.getInt("id");
+29:     String name = res.getString("name");
+30:     idToNameMap.put(id, name);
+31:   }
+32:   System.out.println(idToNameMap);
+33: }
+```
+
+it outputs:
+```
+{1=African Elephant, 2=Zebra}
+```
+
+There are a few things to notice here. First, we use the `executeQuery()` method 
+on line 25, since we want to have a `ResultSet` returned. On line 27, we loop through 
+the results. Each time though the loop represent on eow in the `ResultSet`. Line 28 
+and 29 is the best way to get the columns for a give row.
+
+A `ResultSet` has a _cursor_, which points to the current location in the data. Figure 
+15.5 shows the positions as we loop through.
+
+![the results cursor](img/result_set_cursor.png)
+
+**Figure 15.5: The ResultSet cursor**
+
+At line 25, the cursor starts by pointing to the location before the first row 
+in the `ResultSet`. On the first loop iteration, `rs.next()` returns `true`, and 
+the cursor moves to point to fhe first row of data. On the second loop iteration, 
+`rs.next()` returns `true` again, and the cursor moves to point to the second row 
+of data. The next cll to `rs.next()` returns `false`. The cursor advance beyond 
+the end of the data. The `false` signifies that there is no more data available 
+to get.
+
+We did say the "best" to get data was with column names. There is another way to 
+access the columns. We can use an index, counting from 1, instead of column name.
+```
+28:   int id = rs.getInt(1);
+29:   String name = rs.getString(2);
+```
+
+Now we can see the column positions. Notice how the columns are counted starting 
+with 1 rather than 0. Just like with a `PreparedStatement`, JDBC starts counting 
+at i in a `ResultSet`.
+
+The column names is better because it is clear what is going on when reading the 
+code. It also allows us to change the SQL to reorder the columns.
+
+Sometime we want to get only one row from the table. Maybe we need on one piece 
+of data. Or maybe the SQL is just returning the number of rows in the table. When 
+we want only one row, we use an `if` statement rather than a `while` loop.
+```
+var sql = "SELECT count(*) FROM exhibits";
+
+try (
+  var ps = conn.prepareStatement(sql);
+  var rs = ps.executeQuery()
+) {
+  if (rs.next()) {
+    int count = rs.getInt(1);
+    System.out.println(count);
+  }
+}
+```
+
+It is important to check that `rs.next()` returns `true` before to call a getter 
+on the `ResultSet`. If a query didn't return any rows, it would throw a `SQLException`, 
+so the `if` statement checks that it is safe to call. Alternatively, we can use the 
+column name.
+```
+var count = res.get("count");
+```
+
+Let's try to read a column that does not exist.
+```
+var sql = "SELECT count(*) FROM exhibits";
+
+try (
+  var ps = conn.prepareStatement(sql);
+  var rs = ps.executeQuery()
+) {
+  if (rs.next()) {
+    var count = rs.getInt("total");
+    System.out.println(total);
+  }
+}
+```
+
+This throws a SQLException with a message like this:
+```
+Exception on thread "main" java.sql.SQLException: Column not found: total
+```
+
+Attempting to access a column name or index that does not exist throws a `SQLException`, 
+as does getting data from a `ResultSet` when it isn't pointing at a valid row. We need 
+to recognize such code. Here are a few example to watch out for. 
+```
+var sql = "SELECT * FROM exhibits WHERE name = 'Not in table'"
+
+try (
+  var ps = conn.prepareStatement(sql);
+  var rs = ps.executeQuery();
+) {
+  rs.next();
+  rs.getInt(1);    // SQLException
+}
+```
+
+Calling `rs.next()` works. It returns `false`. However, calling a getter afterward 
+throws a `SQLException` because the result set cursor does not point to a valid position. 
+If a match wre returned, this code would have worked. Another:
+```
+var sql = "SELECT count(*) FROM exhibits";
+
+try (
+  var ps = conn.prepareStatement(sql);
+  var rs = conn.executeQuery()
+) {
+  res.getInt(1);    // SQLException
+}
+```
+
+Not calling `rs.next()` at all is a problem. The  result  set  cursor is still 
+pointing to a location before the first row, so the getter has nothing to point to.
+
+To sum up this section, it is important to remember the following:
+- Always use an `if` statement or `while` loop when calling `rs.next()`.
+- Column indexes begin at 1.
+
+
+### Getting Data from a Column
+
+There are lots of get methods on the `ResultSet` interface. Table 15.6 shows the 
+most common get methods. These are the getter equivalents of the setters in Table 
+15.5.
+
+**Table 15.6: ResultSet get methods**
+![result set getter](img/result_set_getters.png)
+
+
+We have to notice that not all of the primitive types are in Table 15.6. There are 
+`getByte()` and `getFloat()` methods but are not very used. The is no _getChar()_ 
+method.
+
+The `getObject()` method can return any type. For a primitive, is uses the wrapper 
+class. Let's look at the following example.
+```
+16: var sql = "SELECT id, name FROM exhibits";
+17: try (
+18:   var ps = conn.prepareStatement(sql);
+19:   var rs = ps.executeQuery()
+20: ) {
+21:   while (rs.next()) {
+22:     Object idField = rs.getObject("id");
+23:     Object nameField = rs.getObject("name");
+24:     if (idField instanceof Integer id)
+25:       System.out.println(id);
+26:     if (nameField instanceof String name)
+27:       System.out.println(name);
+28:   }
+29: }
+```
+
+Lines 22 and 23 get the column as whatever type of `Object` is most appropriate. 
+Lines 24 to 27 use pattern matching to get the actual types. We probably won't use 
+`getObject()` when writing code for a job, but we need to know that it exists.
+
+
+### Using Bind Variables
+
+We've been creating the `PreparedStatement` and `ResultSet` in the same try-with-
+resources statement. This doesn't work if we have bind variables because they need 
+to be set in between. Luckily, we can nest try-with-resources to handle this. The 
+code below prints out the ID for any exhibits matching a given name.
+
+```
+30: var sql = "SELECT id FROM exhibits WHERE name = ?";
+31: 
+32: try (var ps = conn.prepareStatement(sql)) {
+33:   ps.setString(1, "Zebra");
+34: 
+35:   try (var rs = ps.executeQuery()) {
+36:     while (rs.next()) {
+37:       int id = rs.getInt("id");
+38:       System.out.println(id);
+39:     }
+40:   }
+41: }
+```
+
+Carefully attention to the flow here. First we create the `PreparedStatement` on 
+line 32. Then we set the bind variable on line 33. It is only after these are both 
+done that we have a nested try-with-resources on line 35 to create the `ResultSet`.
+
+[back to top](#chapter-15-jdbc)
+
+
+## CAlling a CallableStatement

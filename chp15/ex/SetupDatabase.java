@@ -4,6 +4,7 @@ import java.sql.*;
 
 /**
  * java -cp ".:ex/hsqldb-2.7.4.jar" ex.SetupDatabase
+ * jshell --class-path "ex/hsqldb-2.7.4.jar"
  */
 
 public class SetupDatabase {
@@ -34,7 +35,7 @@ public class SetupDatabase {
       ResultSet rs = ps.executeQuery()
     ) {
       rs.next();
-      System.out.println(rs.getInt(1));
+      System.out.println(rs.getInt(1));  // first column of first row
     }
   }
 
