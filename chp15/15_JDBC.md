@@ -1148,4 +1148,83 @@ order in which they come. The type comes first and concurrency mode in second.
 
 ## Controlling Data with Transactions
 
-Until now, any changes we made to the data
+Until now, any changes we made to the database took effect right away. A _commit_ 
+is like saving a file. Otherwise specified, changes commit automatically.  However, 
+we can change this behavior to control commits ourselves. A _transaction_ is when 
+one or more statements are grouped with the final result committed or rolled back. 
+_Rollback_ is like closing a file without saving. All the changes from the start 
+of the transaction are discarded. First, we look at writing code to commit and 
+roll back. The we look at how to control our rollback points.
+
+
+### Committing and Rolling Back
+
+Our zoo is renovating and has decided to give more space to the elephants. However, 
+we don't have so much space, so the zebra exhibit will need to be made smaller. Since 
+we can't invent space out of thin air, we want to ensure that the total amount of space 
+remain the same. If either  adding  space for  the elephants or removing space for the 
+zebras fails, we want our transaction to roll back. In the interest of simplicity, we 
+assume that the database table is in a valid state before we run this code. Now, let's 
+examine the code for this scenario.
+
+```
+05: public static void main(String[] args) throws SQLException {
+06:   
+07:   try(Connection conn = DriverManager.getConnection("jdbc:hsqldb:file:zoo")) {
+08:     conn.setAutoCommit(false);
+09: 
+10:     var elephantRowsUpdated = updateRow(conn, 5, "African Elephant");
+11:     var zebraRowsUpdated = updateRow(conn, -5, "Zebra");
+12: 
+13:     if (!elephantRowsUpdated || !zebraRowsUpdated)
+14:       conn.rollback();
+15:     else {
+16:       String selectSql = """
+17:         SELECT COUNT(*)
+18:         FROM exhibits
+19:         WHERE num_acres <= 0
+20:       """;
+21:       try (
+22:         PreparedStatement ps = conn.prepareStatement(selectSql)
+23:         ResultSet rs = ps.executeQuery()
+24:       ) {
+25;         rs.next();
+26:         int count = res.getInt(1);          // fist column of first row
+27:         if (count == 0)
+28:           conn.commit();
+29:         else
+30:           conn.rollback()
+31:       }
+32:     }  // end else
+33:   }  // end of try
+34: }  // end main
+35: 
+36: private static boolean updateRow(
+37:       Connection conn, int numToAdd, String name) throws SQLException {
+38:   
+39:   String updateSql = """
+40:     UPDATE exhibits
+41:     SET num_acres = num_acres + ?
+42:     WHERE name = ?
+43:   """
+44: 
+45:   try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+46:     ps.setInt(1, numToAdd);
+47:     ps.setString(2, name);
+48:     return ps.executeUpdate() > 0;
+49:   }
+50: }  // end updateRow
+```
+
+The first interesting thing in this example is on line 8, where we turn off auto-
+commit mode and declare that we will handle transactions ourselves. Most databases 
+support disabling autocommit mode. If a database does not, it will throw a SQLException 
+on line 8. We than attempt to update the number of acres allocated to each animal. 
+If we are unsuccessful and no rows are updated, we roll back the transaction on line 
+14, causing the state of the database to remain unchanged.
+
+Assuming at least on row is updated, we check `exhibits`, lines 16 to 30, and make 
+sure  none  of  the rows contain an invalid `num_acres` value. If this were a real 
+application, we would have more logic to make sure the amount of space makes sense. 
+On lines 27 to 30, we decide whether to commit the transaction to the database or 
+roll back all updates made to the exhibits table.
