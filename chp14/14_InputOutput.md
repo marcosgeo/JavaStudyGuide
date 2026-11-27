@@ -1235,7 +1235,7 @@ use one byte for Latin characters, UTF-8 and ASCII for example, to using two or 
 bytes per character, such as UTF-16.
 
 ---
-**Character Encoding in Java
+**Character Encoding in Java**
 
 In Java, the character encoding can be specified using the `Charset` class by 
 passing a name value to the static `Charset.forName()` method, such as in the 
@@ -2068,7 +2068,7 @@ color. Finally, if the code is being run on a server, the `System.err` stream
 might write to a different log file.
 
 ---
-**Using Logging APIs
+**Using Logging APIs**
 
 While `System.out` and System.err` are incredibly useful fro debugging stand-alone 
 os simple applications, they are rarely used in professional software development. 

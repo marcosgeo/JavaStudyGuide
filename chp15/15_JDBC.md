@@ -26,6 +26,8 @@ queries, process the results, and work with transactions.
 
 [Controlling Data with Transactions](#controlling-data-with-transactions)
 
+[Closing Database Resources](#closing-database-resources)
+
 
 ## Introducing Relational Databases and SQL
 
@@ -1228,3 +1230,242 @@ sure  none  of  the rows contain an invalid `num_acres` value. If this were a re
 application, we would have more logic to make sure the amount of space makes sense. 
 On lines 27 to 30, we decide whether to commit the transaction to the database or 
 roll back all updates made to the exhibits table.
+
+---
+**Autocommit Edge Cases**
+
+There is two edge cases about autocommit that we need to know. Fist, when we call 
+`setAutoCommit(true)` will automatically trigger a commit whe we are not already 
+in autocommit. After that, _autocommit mode_ takes effect, and each statement is  
+automatically committed.
+
+The other edge cases is what happens if we have autocommit set to `false` and 
+close the connection without rolling back or committing the changes. The answer 
+is that the behavior is _undefined_. It may commit or roll back, depending only 
+on the driver. Don't depend on this behavior; remember to commit or roll back 
+at the end of a transaction!
+
+---
+
+
+### Bookmarking with Savepoints
+
+So far, we have rolled back to the point where autocommit was turned off. We can 
+use savepoints to have more control of the rollback point. Consider the following 
+example:
+```
+20: conn.setAutoCommit(false);
+21: Savepoint sp1 = conn.setSavepoint();
+22: // database code
+23: Savepoint sp2 = conn.setSavepoint("second savepoint");
+24: // database code
+25: conn.rollback(sp2);
+26: // database code
+27: conn.rollback(sp1);
+```
+
+Line 20 is important. We can only use savepoints when we are controlling the 
+transaction. Lines 21 and 23 show how to create a `Savepoint`. The name is optional 
+and typically included in the `toString()`  if we print the save point reference.
+
+Line 25 show the first rollback. That gets rid of any changes made since that save 
+point was created: in this case, the code on line 24. Then line 27 shows the second 
+rollback getting rid of the code on line 22.
+
+Order matter. If we reversed line 25 and 27, the code would throw an exception. 
+Rolling back to `sp1` gets rid of any changes made after that, which includes the 
+second savepoint. Similarly, calling `conn.rollback()` on line 25 would void both 
+savepoints, and line 27 would again throw an exception.
+
+
+### Reviewing Transaction APIs
+
+There aren't many methods for working with transaction, but we need to know all 
+the ones in Table 15.9.
+
+**Table 15.9: Connection APIs for transaction**
+
+![connection apis for transaction](img/connection_apis_transactions.png)
+
+[back to top](#chapter-15-jdbc)
+
+
+## Closing Database Resources
+
+As we saw in Chapter 14, "I/O", it is important to close resources when we are 
+finished with them. This is true for JDBC as well. JDBC resources, such as a 
+`Connection`, are expensive to create. Not closing them creates a resource leak 
+that will eventually slow our program.
+
+Throughout the chapter, we've been using the try-with-resources syntax from Chapter 
+11. The resources need to be closed in a specific order. The `ResultSet` is closed 
+first, followed by the `PreparedStatement` (or `CallableStatement`) and than the 
+`Connection`.
+
+While it is a good habit to close all three resources, it isn't strictly necessary. 
+Closing a JDBC resource should close any resources that it created. In particular, 
+the following are true:
+- Closing a `Connection` also closes `PreparedStatement`, `CallableStatement` 
+    and `ResultSet`.
+- Closing a `PreparedStatement` (or `CallableStatement`) also closes the `ResultSet`.
+
+It is important to close resources in the right order. This avoids both, resources 
+leaks and exceptions.
+
+---
+**Writing a Resource Leak**
+
+In Chapter 11, we learned that it is possible to declare a type before a try-with-
+resources statement. Why this method is bad?
+```
+40: public void bad() throws EQLException {
+41:   var url = "jdbc:hsqldb:zoo";
+42:   var sql = "SELECT not_a_column FROM names";
+43:   var conn = DriverManager.getConnection(url);
+44:   var ps = conn.prepareStatement(sql);
+45:   var rs = ps.executeQuery();
+46: 
+47:   try (conn; ps; re) {
+48:     while (rs.next())
+49:       System.out.println(rs.getString(1));
+50:   }
+51: }
+```
+
+Suppose an exception is thrown on line 45. The try-with-resources block is never 
+entered, so we don't benefit from automatic resource closing. That means this code 
+has a resource leak if it fails. We don't have to write code like this.
+
+---
+
+There's another way to close a `ResourceSet`. JDBC automatically closes a 
+`ResourceSet` when we run another SQL statement from the same statement. This 
+could be a `PreparedStatement` or a `CallableStatement`.
+
+---
+**Dealing with Exceptions**
+
+In most of this chapter, we've lived in a perfect world. Sure, we mentioned that 
+a checked SQLException might be thrown by any JDBC method, but we never caught it. 
+We just declared it and let the caller deal with it. Now let's catch the exception.
+
+```
+var sql = "SELECT not_a_column FROM names";
+var url = "jdbc:hsqldb:zoo";
+try (
+  var conn = DriverManager.getConnection(url);
+  var ps = conn.prepareStatement(sql);
+  var rs = ps.executeQuery()
+) {
+  while (rs.next())
+    System.out.println(rs.getString(1));
+} catch (SQLException e) {
+  System.out.println(e.getMessage());
+  System.out.println(e.getSQLState());
+  System.out.println(e.getErrorCode());
+}
+```
+
+The output looks like this:
+```
+Column 'NOT_A_COLUMN' is either not in any table or ...
+42X04
+30000
+```
+
+Each of these gives us a different piece of information. The `getMessage()` method 
+return a human-readable message about what went wrong. We've only included the beginning 
+of it here. The `getSQLState()` method return a code as to what wen wrong. We can search 
+with the database name and the SQL state to get more information about the error. In 
+comparison, `getErrorCode()` is a database-specific code. On this database, it doesn't 
+do anything.
+
+---
+
+[back to top](#chapter-15-jdbc)
+
+
+## Summary
+
+There are four basic SQL statements, one for each of the CRUD operations: create 
+(INSERT) a new row, read (SELECT) data, update (UPDATE) one or more rows, and delete 
+(DELETE) one or more rows.
+
+We should be familiar with the JDBC interface: `Driver`, `Connection`, `PreparedStatement`, 
+`CallableStatement`, and `ResultSet`. The interfaces are part of the Java API. A database-
+specific JAR file provides the implementations.
+
+To connect to a database, we nee the JDBC URL. A JDBC URL has three parts separated by 
+colons. The first part is `jdbc:`. The second part is the name of the vendor/product. The 
+third part varies by database, but it includes the location and/or name of the database. 
+The location is either the `hostname`  or the `IP` address followed by an optional port.
+
+The `DriverManager` class provides a factory method called `getConnection()` to get a 
+`Connection` object.  We  create  a  `PreparedStatement` or a `CallableStatement` using 
+`prepareStatement()` or `prepareCall()`, respectively. A `PreparedStatement` is used when 
+the SQL is specified in our application, and a `CallableStatement()` is used when the SQL 
+is  stored in the database.  A  `PreparedStatement`  allows  us  to set the values of bind 
+variable. A `CallableStatement` also allows us to set `IN`, `OUT`, and `INOUT` parameters.
+
+When running a SELECT SQL statement, the `executeQuery()` method returns a `ResultSet`. 
+When running a DELETE, INSERT, our UPDATE SQL  statement, the `executeUpdate()` method 
+returns the number of rows that were affected. The is also an `execute()` method that 
+returns a `boolean` to indicate whether the statement was a query.
+
+We call `rs.next()` from an `if` statement or a `while` loop to advance the cursor 
+position. To get data from a column, we call a method like `getString(1)` or `getString("a")`, 
+the first indicates the column by index, the second by name. Column indexes begin with 1, 
+not 0. In addition to getting a `String` primitive, we can call `getObject()` to get any 
+type. 
+
+JDBC let's choose whether to automatically commit our statement or manage transactions 
+ourselves. If we choose the latter, we can control when data is committed or rolled back. 
+Additionally, we can set save-points to roll back to specific points.
+
+It is important to close JDBC resource when finished with them to avoid leaking resources. 
+Closing a `Connection` automatically closes the `Statement` and `ResultSet` objects 
+Closing a `Statement` automatically closes the `ResultSet` object. Also, running another 
+SQL statement closes the previous `ResultSet` object from that Statement.
+
+
+### Essentials
+
+**Na the five JDBC interfaces that we need to know ans where they are defined** The five 
+key interface are `Driver`, `Connection`, `PreparedStatement`, `CallableStatement`, and 
+`ResultSet`. The interfaces are part of the core of Java APIs. The implementation are part 
+of a database driver JAR file..
+
+**Identify correct and incorrect JDBC URLs**. A JDBC URL starts with `jdbc:`, followed by 
+the vendor/product name. Next comes another colon and then a database-specific connection 
+string. This database-specific string includes the location, such as `localhost' or an `IP` 
+address with an optional port. I may also contain the name of the database.
+
+**Describe how to get a `Connectio` using `DriverManager`.** After including the driver 
+JAR in the classpath, call `DriverManager.getConnection(url)` or driver-specific `Connection` 
+implementation class.
+
+**Run queries using a `PreparedStatement`.** When using a `PreparedStatement` the SQL 
+contains question marks (?) for the parameters or bind variables. This SQL is passed at 
+the time the `PreparedStatement` is created, not when it is run. We must call a setter 
+for each of these with the proper value before executing the query.
+
+**Run queries using a `CallableStatement`.** When using a `CallableStatement`, the SQL 
+look like `{ call my_procedure(?) }`. If we are returning a value, `{ ? = call procedure(?) }` 
+is also permitted. We must set any parameter values before executing the query. Additionally, 
+we must call `registerOurParameter()` for any OUT or INOUT parameters.
+
+**Loop through a `ResultSet`.** Before trying to get data from a `ResultSet`, we 
+call `rs.nect()` inside an if statement or while loop. This ensures that the cursor 
+is in a valid position. To get data from a column, call a method like `getString(1)` 
+or `getString("column_name")`. Never forgetting that SQL indexes starts at 1.
+
+**Work with transactions.** When autocommit is `false`, the `commit()` and `rollback()` 
+methods control the transaction. There is an overloaded rollback method taking a `Savepoint` 
+to control to where to roll back to a specific point.
+
+**Identify when a resource should be closed.** If we're closing all three resources, the 
+`ResultSet` must be closed first, followed by the `PreparedStatement` or `CallableStatement`, 
+and finally the `Connection`.
+
+
+[end](#chapter-15-jdbc)
